@@ -1,0 +1,4 @@
+アドレスバーに　cmd
+python -m http.server 8000
+ブラウザ
+http://localhost:8000
