@@ -31,8 +31,8 @@
     .pass-box { display: inline-flex; align-items: center; gap: 4px; background: #1a2634; border: 1px solid #29b6f6; border-radius: 6px; padding: 2px 8px; margin: 2px; }
     .name-box label { font-size: 12px; font-weight: bold; color: #ffca28; white-space: nowrap; }
     .pass-box label { font-size: 12px; font-weight: bold; color: #29b6f6; white-space: nowrap; }
-    #creator-name, #res-player-name { width: 130px; max-width: 30vw; background: #11131c; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 5px 8px; font-weight: bold; }
-    #edit-pass { width: 100px; max-width: 24vw; background: #11131c; color: #fff; border: 1px solid #555; border-radius: 4px; padding: 5px 8px; font-family: monospace; }
+    #creator-name, #res-player-name { width: 125px; max-width: 28vw; background: #11131c; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 5px 8px; font-weight: bold; }
+    #edit-pass { width: 95px; max-width: 22vw; background: #11131c; color: #fff; border: 1px solid #555; border-radius: 4px; padding: 5px 8px; font-family: monospace; }
     #creator-name:focus, #res-player-name:focus, #edit-pass:focus { border-color: #00e676; outline: none; background: #191d2b; }
     #readonly-badge { display: none; align-items: center; gap: 6px; background: rgba(0, 230, 118, 0.18); border: 1px solid #00e676; color: #00e676; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
     #readonly-badge:hover { background: rgba(0, 230, 118, 0.30); }
@@ -41,7 +41,6 @@
     .slider-row label { width: 225px; }
     .slider-row input[type="range"] { flex: 1; margin: 0 8px; cursor: pointer; }
     .slider-row span { width: 56px; text-align: right; font-family: monospace; }
-    /* ⌨️ キーコンフィグ用ボタンスタイル */
     .keybind-box { background: #151822; border: 1px solid #444; border-radius: 6px; padding: 8px; margin-bottom: 8px; }
     .keybind-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; justify-content: center; }
     .keybind-btn { background: #262b3d; border: 1px solid #66d9e8; color: #fff; padding: 5px 10px; border-radius: 5px; font-size: 12px; font-family: monospace; cursor: pointer; }
@@ -100,7 +99,7 @@
 
   <!-- 1段目：検索・貼付・自動生成・手動記録・微調整・遊ぶ・AUTO・録画・全画面・設定・言語バー -->
   <div class="bar">
-    <input type="text" id="yt-url" placeholder="曲名で検索 または YouTube URL" onkeydown="if(event.key==='Enter') handleUrlOrSearch()">
+    <input type="text" id="yt-url" placeholder="曲名で検索 または YouTube/JSON URL" onkeydown="if(event.key==='Enter') handleUrlOrSearch()">
     <button id="btn-search" tabindex="-1" onclick="handleUrlOrSearch()">🔍 検索/読込</button>
     <button id="btn-paste" tabindex="-1" class="cfg-btn" onclick="pasteAndLoad()">📋 貼付</button>
     <button id="btn-open-auto" tabindex="-1" class="auto-btn" onclick="openAutoModal()">✨ 自動生成</button>
@@ -119,7 +118,7 @@
     </select>
   </div>
 
-  <!-- 2段目：プレイヤー名・編集パス・再生速度(7)・ミラー/ランダム(10)・共有・保存バー -->
+  <!-- 2段目：プレイヤー名・編集パス・再生速度・ミラー/ランダム・JSON読込・共有・保存バー -->
   <div class="bar">
     <div class="name-box">
       <label id="lbl-player-name" for="creator-name">👤 名前:</label>
@@ -141,6 +140,7 @@
       <option id="opt-mod-mirror" value="mirror">🪞 ミラー (左右反転)</option>
       <option id="opt-mod-random" value="random">🎲 ランダム (シャッフル)</option>
     </select>
+    <button id="btn-import-json" tabindex="-1" class="cfg-btn" onclick="promptImportExternalJson()" title="外部JSON URLまたはJSONデータから譜面を読み込みます">📥 JSON読込</button>
     <button id="readonly-badge" tabindex="-1" onclick="promptUnlockSharedChart()">🔒 共有譜面（🔑パスで編集解除）</button>
     <button id="btn-tw-create" tabindex="-1" class="tw-btn" onclick="shareCreationOnTwitter()">🐦 作成共有</button>
     <button id="btn-copy-url" tabindex="-1" class="share-btn" onclick="copyShareUrl()">🔗 URLコピー</button>
@@ -151,7 +151,7 @@
     <button id="btn-del-saved" class="cfg-btn" tabindex="-1" onclick="deleteSavedChart()">🗑️</button>
   </div>
 
-  <!-- 設定パネル（🔔効果音・⏱判定調整・🤝同時押し吸着・⌨️PCキーコンフィグ(11)） -->
+  <!-- 設定パネル -->
   <div id="settings-panel">
     <div class="keybind-box">
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -237,7 +237,7 @@
     </div>
   </div>
 
-  <!-- 🛠️ 譜面エディター（微調整）パネル（↩️Undo ＆ 📋範囲コピペ(9) を追加） -->
+  <!-- 🛠️ 譜面エディター（微調整）パネル -->
   <div id="editor-panel">
     <div class="edit-row">
       <button id="btn-undo" class="edit-btn" tabindex="-1" onclick="undoEdit()" title="直前の操作を元に戻します (Ctrl+Z)">↩️ 戻す</button>
@@ -392,16 +392,17 @@
   </div>
 
   <div id="chart-output-wrap">
-    <textarea id="chart-output" oninput="scheduleCompressionCache()">[]</textarea>
+    <textarea id="chart-output" oninput="onChartTextareaInput()">[]</textarea>
   </div>
 
   <script>
     let currentLang = localStorage.getItem('rg_lang') || 'ja';
     const I18N = {
       ja: {
-        urlPlaceholder: '曲名で検索 または YouTube URL', searchBtn: '🔍 検索/読込', pasteBtn: '📋 貼付', autoBtn: '✨ 自動生成', recBtn: '① 手動記録', editBtn: '🛠️ 微調整', playBtn: '② 遊ぶ！', demoBtn: '🤖 AUTO', vidRecStartBtn: '🎥 MP4録画', vidRecStopBtn: '⏹ 録画停止', fsBtn: '⛶ 全画面', cfgBtn: '⚙️ 設定', lblPlayerName: '👤 名前:', creatorPlaceholder: 'ここに入力', lblEditPass: '🔑 パス:', editPassPlaceholder: 'スマホ⇔PC合言葉',
+        urlPlaceholder: '曲名で検索 または YouTube/JSON URL', searchBtn: '🔍 検索/読込', pasteBtn: '📋 貼付', autoBtn: '✨ 自動生成', recBtn: '① 手動記録', editBtn: '🛠️ 微調整', playBtn: '② 遊ぶ！', demoBtn: '🤖 AUTO', vidRecStartBtn: '🎥 MP4録画', vidRecStopBtn: '⏹ 録画停止', fsBtn: '⛶ 全画面', cfgBtn: '⚙️ 設定', lblPlayerName: '👤 名前:', creatorPlaceholder: 'ここに入力', lblEditPass: '🔑 パス:', editPassPlaceholder: 'スマホ⇔PC合言葉',
         optRate05: '🐢 0.5x (超スロー)', optRate075: '🐢 0.75x (スロー)', optRate10: '▶ 1.0x (標準速度)', optRate125: '⚡ 1.25x (高速)', optRate15: '🔥 1.5x (超高速)',
         optModOff: '🎯 通常配置', optModMirror: '🪞 ミラー (左右反転)', optModRandom: '🎲 ランダム (シャッフル)',
+        importJsonBtn: '📥 JSON読込', msgImportJsonPrompt: '読み込むJSONのURL または JSONテキストを貼り付けてください:', msgImportJsonSuccess: '📥 JSON譜面（{n}ノーツ）を読み込みました！', msgImportJsonFail: 'JSONデータの読み込みまたは解析に失敗しました。',
         readonlyBadge: '🔒 共有譜面（🔑パスで編集解除）', twCreateBtn: '🐦 作成共有', copyUrlBtn: '🔗 URLコピー', saveBtn: '💾 保存', savedListDefault: '📂 保存譜面 ({n}曲)',
         lblKeybindTitle: '⌨️ PCキー割り当て設定 (クリックして好きなキーを押す):', resetKeysBtn: '初期キーに戻す', keyPressWait: 'キー入力待ち...',
         lblSfxType: '🔔 タップ音 (効果音):', optSfxBell: '🔔 鈴・シャンシャン (推奨)', optSfxTamb: '🪘 タンバリン (シャリン)', optSfxClap: '👏 クラップ (手拍子)', optSfxWood: '🥁 ウッド (太鼓風)', optSfxSynth: '🎹 クリスタル (電子音)', optSfxOff: '🔇 なし (OFF)', testSfxBtn: '🔊 試聴', lblSfxVol: '🔊 タップ音の音量 (%):', lblOffset: '⏱ 判定タイミング調整 (音ズレ補正):', lblChordSnap: '🤝 同時押し自動吸着幅 (微ズレ補正):', lblFan: '扇状カーブ (100%=半円):', lblOpacity: 'レーンの濃さ (不透明度%):', lblLanes: 'レーン数 (2〜9 / 初期値4):', lblSpeed: 'ノーツ速度 (小=ゆっくり):', lblVx: '奥の中心位置 (左右 X%):', lblVy: '奥の高さ (上下 Y%):', lblBx: '手前の中心位置 (左右 X%):', lblTw: '奥のレーン幅 (広がり%):', lblBw: '手前のレーン幅 (広がり%):', resetCfgBtn: '初期値に戻す',
@@ -416,9 +417,10 @@
         twCreateTpl: '『{title}』の譜面({notes}ノーツ/{lanes}レーン)を{creator}が作成しました！\n🎮遊ぶ: {url}\n📺元動画: {yt} {tag} #rhythmfestival', twScoreTpl: '『{title}』({notes}ノーツ/{lanes}レーン)で{player}が【{score}点 / {combo}コンボ{fc}】を達成！\n⚔️この記録に挑戦: {url}\n📺{yt} {tag} #rhythmfestival'
       },
       en: {
-        urlPlaceholder: 'Search song or paste YouTube URL', searchBtn: '🔍 Search/Load', pasteBtn: '📋 Paste', autoBtn: '✨ Auto Gen', recBtn: '① Record', editBtn: '🛠️ Edit', playBtn: '② Play!', demoBtn: '🤖 AUTO', vidRecStartBtn: '🎥 Rec MP4', vidRecStopBtn: '⏹ Stop Rec', fsBtn: '⛶ Fullscreen', cfgBtn: '⚙️ Settings', lblPlayerName: '👤 Name:', creatorPlaceholder: 'Enter name...', lblEditPass: '🔑 Pass:', editPassPlaceholder: 'PC/Mobile Pass',
+        urlPlaceholder: 'Search song or paste YouTube/JSON URL', searchBtn: '🔍 Search/Load', pasteBtn: '📋 Paste', autoBtn: '✨ Auto Gen', recBtn: '① Record', editBtn: '🛠️ Edit', playBtn: '② Play!', demoBtn: '🤖 AUTO', vidRecStartBtn: '🎥 Rec MP4', vidRecStopBtn: '⏹ Stop Rec', fsBtn: '⛶ Fullscreen', cfgBtn: '⚙️ Settings', lblPlayerName: '👤 Name:', creatorPlaceholder: 'Enter name...', lblEditPass: '🔑 Pass:', editPassPlaceholder: 'PC/Mobile Pass',
         optRate05: '🐢 0.5x (Super Slow)', optRate075: '🐢 0.75x (Slow)', optRate10: '▶ 1.0x (Normal)', optRate125: '⚡ 1.25x (Fast)', optRate15: '🔥 1.5x (Super Fast)',
         optModOff: '🎯 Normal Lanes', optModMirror: '🪞 Mirror (Flipped)', optModRandom: '🎲 Random (Shuffle)',
+        importJsonBtn: '📥 Load JSON', msgImportJsonPrompt: 'Paste JSON URL or raw JSON text:', msgImportJsonSuccess: '📥 Loaded JSON chart ({n} notes)!', msgImportJsonFail: 'Failed to load or parse JSON chart data.',
         readonlyBadge: '🔒 Shared Chart (🔑 Tap to Unlock)', twCreateBtn: '🐦 Share Chart', copyUrlBtn: '🔗 Copy URL', saveBtn: '💾 Save', savedListDefault: '📂 Saved Charts ({n})',
         lblKeybindTitle: '⌨️ PC Key Bindings (Click a lane button & press any key):', resetKeysBtn: 'Reset Keys', keyPressWait: 'Press any key...',
         lblSfxType: '🔔 Tap Sound (SFX):', optSfxBell: '🔔 Jingle Bell', optSfxTamb: '🪘 Tambourine', optSfxClap: '👏 Hand Clap', optSfxWood: '🥁 Wood / Taiko', optSfxSynth: '🎹 Crystal Synth', optSfxOff: '🔇 Mute (OFF)', testSfxBtn: '🔊 Test', lblSfxVol: '🔊 Tap Volume (%):', lblOffset: '⏱ Timing Offset (Audio Delay):', lblChordSnap: '🤝 Chord Auto-Snap Window:', lblFan: 'Fan Curve (100%=Semicircle):', lblOpacity: 'Lane Opacity (%):', lblLanes: 'Lanes (2-9 / Default 4):', lblSpeed: 'Note Speed (Low=Slow):', lblVx: 'Top Center X (%):', lblVy: 'Top Height Y (%):', lblBx: 'Bottom Center X (%):', lblTw: 'Top Lane Width (%):', lblBw: 'Bottom Lane Width (%):', resetCfgBtn: 'Reset Defaults',
@@ -433,9 +435,10 @@
         twCreateTpl: '{creator} created a chart ({notes} notes/{lanes}K) for "{title}"!\n🎮Play: {url}\n📺Video: {yt} {tag} #rhythmfestival', twScoreTpl: '{player} scored [{score} pts / {combo} Combo{fc}] on "{title}" ({notes} notes/{lanes}K)!\n⚔️Challenge: {url}\n📺{yt} {tag} #rhythmfestival'
       },
       zh: {
-        urlPlaceholder: '搜索歌曲名称 或 粘贴 YouTube 链接', searchBtn: '🔍 搜索/加载', pasteBtn: '📋 粘贴', autoBtn: '✨ 自动生成', recBtn: '① 手动录制', editBtn: '🛠️ 微调编辑', playBtn: '② 开始游玩！', demoBtn: '🤖 自动演示', vidRecStartBtn: '🎥 录屏MP4', vidRecStopBtn: '⏹ 停止录屏', fsBtn: '⛶ 全屏', cfgBtn: '⚙️ 设置', lblPlayerName: '👤 名字:', creatorPlaceholder: '在此输入昵称...', lblEditPass: '🔑 密码:', editPassPlaceholder: '手机⇔电脑暗号',
+        urlPlaceholder: '搜索歌曲名称 或 粘贴 YouTube/JSON 链接', searchBtn: '🔍 搜索/加载', pasteBtn: '📋 粘贴', autoBtn: '✨ 自动生成', recBtn: '① 手动录制', editBtn: '🛠️ 微调编辑', playBtn: '② 开始游玩！', demoBtn: '🤖 自动演示', vidRecStartBtn: '🎥 录屏MP4', vidRecStopBtn: '⏹ 停止录屏', fsBtn: '⛶ 全屏', cfgBtn: '⚙️ 设置', lblPlayerName: '👤 名字:', creatorPlaceholder: '在此输入昵称...', lblEditPass: '🔑 密码:', editPassPlaceholder: '手机⇔电脑暗号',
         optRate05: '🐢 0.5x (超慢速)', optRate075: '🐢 0.75x (慢速)', optRate10: '▶ 1.0x (标准速度)', optRate125: '⚡ 1.25x (快速)', optRate15: '🔥 1.5x (超快速)',
         optModOff: '🎯 默认轨道', optModMirror: '🪞 镜像 (左右反转)', optModRandom: '🎲 随机 (轨道打乱)',
+        importJsonBtn: '📥 导入JSON', msgImportJsonPrompt: '请粘贴 JSON 链接或 JSON 文本内容:', msgImportJsonSuccess: '📥 已成功导入 JSON 谱面（{n}个音符）！', msgImportJsonFail: 'JSON 数据读取或解析失败。',
         readonlyBadge: '🔒 分享谱面（🔑点击输入密码解锁）', twCreateBtn: '🐦 分享谱面', copyUrlBtn: '🔗 复制短链', saveBtn: '💾 保存', savedListDefault: '📂 已存谱面 ({n}首)',
         lblKeybindTitle: '⌨️ 电脑键盘按键设置 (点击轨道按钮后按下任意键):', resetKeysBtn: '恢复默认按键', keyPressWait: '请按键...',
         lblSfxType: '🔔 打击音效 (Tap):', optSfxBell: '🔔 铃铛・清脆铃音 (推荐)', optSfxTamb: '🪘 铃鼓', optSfxClap: '👏 拍手', optSfxWood: '🥁 木鱼 / 太鼓', optSfxSynth: '🎹 水晶电子音', optSfxOff: '🔇 关闭音效 (OFF)', testSfxBtn: '🔊 试听', lblSfxVol: '🔊 打击音效音量 (%):', lblOffset: '⏱ 判定延迟调节 (蓝牙耳机校准):', lblChordSnap: '🤝 双押自动吸附范围 (微差对齐):', lblFan: '扇形弧度 (100%=半圆):', lblOpacity: '轨道不透明度 (%):', lblLanes: '轨道数量 (2〜9 / 默认4):', lblSpeed: '音符速度 (小=慢):', lblVx: '远端中心位置 (X%):', lblVy: '远端高度 (Y%):', lblBx: '近端中心位置 (X%):', lblTw: '远端轨道宽度 (%):', lblBw: '近端轨道宽度 (%):', resetCfgBtn: '恢复默认设置',
@@ -450,9 +453,10 @@
         twCreateTpl: '{creator} 制作了《{title}》的谱面({notes}音符/{lanes}轨)！\n🎮游玩: {url}\n📺原视频: {yt} {tag} #rhythmfestival', twScoreTpl: '{player} 在《{title}》({notes}音符/{lanes}轨)中取得了【{score}分 / {combo}连击{fc}】！\n⚔️挑战此记录: {url}\n📺{yt} {tag} #rhythmfestival'
       },
       ko: {
-        urlPlaceholder: '곡명으로 검색 또는 YouTube URL 붙여넣기', searchBtn: '🔍 검색/불러오기', pasteBtn: '📋 붙여넣기', autoBtn: '✨ 자동생성', recBtn: '① 수동기록', editBtn: '🛠️ 미세조정', playBtn: '② 플레이!', demoBtn: '🤖 오토', vidRecStartBtn: '🎥 MP4녹화', vidRecStopBtn: '⏹ 녹화중지', fsBtn: '⛶ 전체화면', cfgBtn: '⚙️ 설정', lblPlayerName: '👤 이름:', creatorPlaceholder: '이름 입력...', lblEditPass: '🔑 암호:', editPassPlaceholder: '폰⇔PC 연동 암호',
+        urlPlaceholder: '곡명으로 검색 또는 YouTube/JSON URL 붙여넣기', searchBtn: '🔍 검색/불러오기', pasteBtn: '📋 붙여넣기', autoBtn: '✨ 자동생성', recBtn: '① 수동기록', editBtn: '🛠️ 미세조정', playBtn: '② 플레이!', demoBtn: '🤖 오토', vidRecStartBtn: '🎥 MP4녹화', vidRecStopBtn: '⏹ 녹화중지', fsBtn: '⛶ 전체화면', cfgBtn: '⚙️ 설정', lblPlayerName: '👤 이름:', creatorPlaceholder: '이름 입력...', lblEditPass: '🔑 암호:', editPassPlaceholder: '폰⇔PC 연동 암호',
         optRate05: '🐢 0.5x (초저속)', optRate075: '🐢 0.75x (저속)', optRate10: '▶ 1.0x (표준속도)', optRate125: '⚡ 1.25x (고속)', optRate15: '🔥 1.5x (초고속)',
         optModOff: '🎯 기본 배치', optModMirror: '🪞 미러 (좌우반전)', optModRandom: '🎲 랜덤 (셔플)',
+        importJsonBtn: '📥 JSON 로드', msgImportJsonPrompt: '로드할 JSON URL 또는 JSON 텍스트를 붙여넣으세요:', msgImportJsonSuccess: '📥 JSON 채보({n}노트)를 불러왔습니다!', msgImportJsonFail: 'JSON 데이터를 불러오거나 분석하지 못했습니다.',
         readonlyBadge: '🔒 공유 채보 (🔑클릭하여 잠금해제)', twCreateBtn: '🐦 채보 공유', copyUrlBtn: '🔗 URL 복사', saveBtn: '💾 저장', savedListDefault: '📂 저장된 채보 ({n}곡)',
         lblKeybindTitle: '⌨️ PC 키보드 키 설정 (레인 버튼을 클릭한 뒤 원하는 키 입력):', resetKeysBtn: '기본 키 복원', keyPressWait: '키 입력 대기...',
         lblSfxType: '🔔 탭 효과음 (SFX):', optSfxBell: '🔔 방울 소리・샹샹 (추천)', optSfxTamb: '🪘 탬버린', optSfxClap: '👏 박수 소리', optSfxWood: '🥁 우드 / 북소리', optSfxSynth: '🎹 크리스탈 전자음', optSfxOff: '🔇 없음 (OFF)', testSfxBtn: '🔊 미리듣기', lblSfxVol: '🔊 탭 효과음 볼륨 (%):', lblOffset: '⏱ 판정 타이밍 조절 (블루투스 싱크):', lblChordSnap: '🤝 동시치기 자동 흡착 범위:', lblFan: '부채꼴 곡률 (100%=반원):', lblOpacity: '레인 불투명도 (%):', lblLanes: '레인 수 (2〜9 / 기본4):', lblSpeed: '노트 속도:', lblVx: '상단 중심 (X%):', lblVy: '상단 높이 (Y%):', lblBx: '하단 중심 (X%):', lblTw: '상단 레인 폭 (%):', lblBw: '하단 레인 폭 (%):', resetCfgBtn: '기본값 복원',
@@ -496,13 +500,13 @@
         'lbl-edit-pass': 'lblEditPass', 'opt-rate-05': 'optRate05', 'opt-rate-075': 'optRate075',
         'opt-rate-10': 'optRate10', 'opt-rate-125': 'optRate125', 'opt-rate-15': 'optRate15',
         'opt-mod-off': 'optModOff', 'opt-mod-mirror': 'optModMirror', 'opt-mod-random': 'optModRandom',
-        'readonly-badge': 'readonlyBadge', 'btn-tw-create': 'twCreateBtn', 'btn-copy-url': 'copyUrlBtn',
-        'btn-save-local': 'saveBtn', 'lbl-keybind-title': 'lblKeybindTitle', 'btn-reset-keys': 'resetKeysBtn',
-        'lbl-sfx-type': 'lblSfxType', 'opt-sfx-bell': 'optSfxBell', 'opt-sfx-tamb': 'optSfxTamb',
-        'opt-sfx-clap': 'optSfxClap', 'opt-sfx-wood': 'optSfxWood', 'opt-sfx-synth': 'optSfxSynth',
-        'opt-sfx-off': 'optSfxOff', 'btn-test-sfx': 'testSfxBtn', 'lbl-sfx-vol': 'lblSfxVol',
-        'lbl-offset': 'lblOffset', 'lbl-chord-snap': 'lblChordSnap', 'lbl-fan': 'lblFan',
-        'lbl-opacity': 'lblOpacity', 'lbl-lanes': 'lblLanes', 'lbl-speed': 'lblSpeed',
+        'btn-import-json': 'importJsonBtn', 'readonly-badge': 'readonlyBadge', 'btn-tw-create': 'twCreateBtn',
+        'btn-copy-url': 'copyUrlBtn', 'btn-save-local': 'saveBtn', 'lbl-keybind-title': 'lblKeybindTitle',
+        'btn-reset-keys': 'resetKeysBtn', 'lbl-sfx-type': 'lblSfxType', 'opt-sfx-bell': 'optSfxBell',
+        'opt-sfx-tamb': 'optSfxTamb', 'opt-sfx-clap': 'optSfxClap', 'opt-sfx-wood': 'optSfxWood',
+        'opt-sfx-synth': 'optSfxSynth', 'opt-sfx-off': 'optSfxOff', 'btn-test-sfx': 'testSfxBtn',
+        'lbl-sfx-vol': 'lblSfxVol', 'lbl-offset': 'lblOffset', 'lbl-chord-snap': 'lblChordSnap',
+        'lbl-fan': 'lblFan', 'lbl-opacity': 'lblOpacity', 'lbl-lanes': 'lblLanes', 'lbl-speed': 'lblSpeed',
         'lbl-vx': 'lblVx', 'lbl-vy': 'lblVy', 'lbl-bx': 'lblBx', 'lbl-tw': 'lblTw', 'lbl-bw': 'lblBw',
         'btn-reset-cfg': 'resetCfgBtn', 'btn-undo': 'undoBtn', 'btn-append-rec': 'appendRecBtn',
         'btn-hold-dec': 'holdDecBtn', 'btn-hold-inc': 'holdIncBtn', 'btn-del-note': 'delNoteBtn',
@@ -549,19 +553,12 @@
     let tapTimes = [], isAudioListening = false, audioCtx = null, audioAnalyser = null, audioStream = null, prevSpectrum = null, recordedAudioFrames = [];
     let lastYtTime = 0, lastPerfTime = 0, cachedShareHash = '';
 
-    // 🐢 機能7：スロー＆倍速再生用変数
     let currentPlaybackRate = 1.0;
-
-    // 🪞 機能10：ミラー・ランダム配置変換用変数
     let currentLaneMod = 'off';
     let lanePermutation = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-
-    // ↩️ 機能9：Undo履歴スタック ＆ 範囲コピペ用バッファ
     let undoStack = [];
     let copiedNotesBuffer = [];
     let dragUndoSaved = false;
-
-    // ⌨️ 機能11：PCキーコンフィグ用変数
     let listeningKeyLane = -1;
 
     const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
@@ -590,7 +587,140 @@
       vanishX: 50, vanishY: 18, bottomX: 50, judgeY: 80, topWidth: 8, bottomWidth: 80
     };
 
-    // --- ⌨️ 機能11：PCキーコンフィグ管理関数 ---
+    // --- 📥 外部JSON譜面データの自動解析・変換・読み込み機能 ---
+    function parseExternalOrStandardChartJson(rawText) {
+      const data = JSON.parse(rawText);
+      const arr = Array.isArray(data)
+        ? data
+        : (data.notes_list || data.notes || (data.response_data && data.response_data.notes_list) || []);
+      if (!Array.isArray(arr) || arr.length === 0) return null;
+
+      // timing_sec 形式の外部JSONデータの場合
+      if (arr[0] && arr[0].timing_sec !== undefined) {
+        let maxPos = 1;
+        for (const item of arr) {
+          const p = Number(item.position) || 1;
+          if (p > maxPos) maxPos = p;
+        }
+        const detectedLanes = maxPos > cfg.lanes ? Math.min(9, Math.max(4, maxPos)) : cfg.lanes;
+        const converted = arr.map(item => {
+          const tVal = Number(Number(item.timing_sec || 0).toFixed(2));
+          const pos = Math.max(1, Math.min(9, Number(item.position) || 1));
+          // 9レーン形式(右端1〜左端9)の場合は左から0〜8に変換、それ以外は0始まりに正規化
+          const laneIdx = detectedLanes === 9 ? (9 - pos) : Math.min(detectedLanes - 1, pos - 1);
+          const eff = Number(item.effect) || 1;
+          const effVal = Number(item.effect_value) || 0;
+          const dur = (eff === 3 && effVal >= 0.20) ? Number(effVal.toFixed(2)) : 0;
+          return { time: tVal, lane: laneIdx, duration: dur };
+        }).sort((a, b) => a.time - b.time);
+        return { lanes: detectedLanes, notes: converted };
+      }
+
+      // 標準の { time, lane, duration } 形式の場合
+      if (arr[0] && arr[0].time !== undefined && arr[0].lane !== undefined) {
+        let maxLane = cfg.lanes;
+        const converted = arr.map(item => {
+          const l = Math.max(0, Math.min(8, Number(item.lane) || 0));
+          if (l + 1 > maxLane) maxLane = l + 1;
+          return {
+            time: Number(Number(item.time || 0).toFixed(2)),
+            lane: l,
+            duration: Number(Number(item.duration || 0).toFixed(2))
+          };
+        }).sort((a, b) => a.time - b.time);
+        return { lanes: Math.min(9, Math.max(2, maxLane)), notes: converted };
+      }
+      return null;
+    }
+
+    async function fetchJsonTextWithFallback(url) {
+      const fetchDirect = async () => {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('Direct fetch failed');
+        return await r.text();
+      };
+      const fetchAllOrigins = async () => {
+        const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+        if (!r.ok) throw new Error('Proxy 1 failed');
+        return await r.text();
+      };
+      const fetchCodeTabs = async () => {
+        const r = await fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url));
+        if (!r.ok) throw new Error('Proxy 2 failed');
+        return await r.text();
+      };
+      return await Promise.any([fetchDirect(), fetchAllOrigins(), fetchCodeTabs()]);
+    }
+
+    async function importExternalJsonFromInput(inputStr) {
+      if (!inputStr) return false;
+      const trimmed = inputStr.trim();
+      try {
+        let rawJson = trimmed;
+        if (/^https?:\/\//i.test(trimmed)) {
+          rawJson = await fetchJsonTextWithFallback(trimmed);
+        }
+        const parsed = parseExternalOrStandardChartJson(rawJson);
+        if (!parsed || !parsed.notes || parsed.notes.length === 0) {
+          alert(t('msgImportJsonFail'));
+          return false;
+        }
+        pushUndoState();
+        setSharedReadOnlyMode(false);
+        document.getElementById('cfg-lanes').value = parsed.lanes;
+        updateSettings(true);
+        notes = parsed.notes.map(n => ({
+          time: n.time, lane: n.lane, duration: n.duration,
+          hit: false, holding: false, completed: false, nextTickTime: 0
+        }));
+        resetNotesPlayState();
+        syncNotesToTextarea();
+        if (currentVideoId) mode = 'play';
+        updateHudVisibility();
+        judgeText = t('msgImportJsonSuccess', { n: notes.length });
+        return true;
+      } catch (e) {
+        alert(t('msgImportJsonFail'));
+        return false;
+      }
+    }
+
+    async function promptImportExternalJson() {
+      releaseUIElementFocus();
+      if (isSharedReadOnly) {
+        promptUnlockSharedChart();
+        return;
+      }
+      const val = prompt(t('msgImportJsonPrompt'), '');
+      if (!val || !val.trim()) return;
+      await importExternalJsonFromInput(val.trim());
+    }
+
+    function onChartTextareaInput() {
+      if (isSharedReadOnly) return;
+      const val = document.getElementById('chart-output').value.trim();
+      if (val.includes('"timing_sec"')) {
+        try {
+          const parsed = parseExternalOrStandardChartJson(val);
+          if (parsed && parsed.notes.length > 0) {
+            pushUndoState();
+            document.getElementById('cfg-lanes').value = parsed.lanes;
+            updateSettings(true);
+            notes = parsed.notes.map(n => ({
+              time: n.time, lane: n.lane, duration: n.duration,
+              hit: false, holding: false, completed: false, nextTickTime: 0
+            }));
+            resetNotesPlayState();
+            syncNotesToTextarea();
+            judgeText = t('msgImportJsonSuccess', { n: notes.length });
+            return;
+          }
+        } catch (e) {}
+      }
+      scheduleCompressionCache();
+    }
+
+    // --- ⌨️ PCキーコンフィグ管理関数 ---
     function keyCodeToLabel(code) {
       if (!code) return '?';
       if (code === 'Space') return 'SPC';
@@ -655,7 +785,6 @@
       renderKeyBindUI();
     }
 
-    // --- 🐢 機能7：スロー＆倍速再生切り替え関数 ---
     function changePlaybackRate(val) {
       releaseUIElementFocus();
       const rate = parseFloat(val) || 1.0;
@@ -669,7 +798,6 @@
       }
     }
 
-    // --- 🪞 機能10：ミラー（左右反転）・ランダム配置オプション ---
     function rebuildLanePermutation() {
       const n = cfg.lanes;
       const arr = [];
@@ -692,7 +820,6 @@
       rebuildLanePermutation();
     }
 
-    // プレイ時はミラー/ランダム変換後のレーンを返し、記録・微調整時は元のレーンを返す
     function getEffectiveLane(note) {
       const raw = Number(note.lane) || 0;
       if (mode === 'play' && currentLaneMod !== 'off') {
@@ -701,7 +828,6 @@
       return raw;
     }
 
-    // --- ↩️ 機能9：微調整モードのUndo（元に戻す）＆ 範囲コピー・貼り付け ---
     function pushUndoState() {
       if (isSharedReadOnly) return;
       const snap = JSON.stringify(notes.map(n => ({ time: Number(n.time), lane: Number(n.lane), duration: Number(n.duration || 0) })));
@@ -835,7 +961,6 @@
       judgeText = t('msgSnappedChords', { n: alignedCount });
     }
 
-    // --- 📸 リザルト画面の「記念スクショ用カード画像」自動生成・保存機能 ---
     function loadCorsImage(url, timeoutMs = 2600) {
       return new Promise((resolve) => {
         const img = new Image();
@@ -1178,6 +1303,7 @@
       document.getElementById('btn-open-auto').style.display = disp;
       document.getElementById('btn-prep-rec').style.display = disp;
       document.getElementById('btn-edit-mode').style.display = disp;
+      document.getElementById('btn-import-json').style.display = disp;
       document.getElementById('btn-tw-create').style.display = disp;
       document.getElementById('btn-save-local').style.display = disp;
       document.getElementById('chart-output-wrap').style.display = isSharedReadOnly ? 'none' : 'block';
@@ -1220,9 +1346,9 @@
       stopAudioCaptureResources(); closeAutoModal();
       document.getElementById('result-modal').style.display = 'none';
       try {
-        const parsed = JSON.parse(document.getElementById('chart-output').value);
-        if (Array.isArray(parsed) && parsed.length > 0 && notes.length === 0) {
-          notes = parsed.map(n => ({ time: Number(n.time), lane: Number(n.lane), duration: Number(n.duration || 0) }));
+        const parsed = parseExternalOrStandardChartJson(document.getElementById('chart-output').value);
+        if (parsed && parsed.notes.length > 0 && notes.length === 0) {
+          notes = parsed.notes;
         }
       } catch (e) {}
       mode = 'edit'; isAutoPlay = false;
@@ -1900,6 +2026,12 @@
         renderVideoCards(getRecentVideos(), t('searchEmptyHistory'));
         return;
       }
+      // 📥 入力欄に .json のURLまたはJSONテキストが貼られた場合は、そのまま外部JSON譜面として読み込む
+      if (input.startsWith('[') || input.startsWith('{') || /\.json(\?.*)?$/i.test(input)) {
+        await importExternalJsonFromInput(input);
+        if (currentVideoId) document.getElementById('yt-url').value = `https://www.youtube.com/watch?v=${currentVideoId}`;
+        return;
+      }
       if (input.includes('#w=') || input.includes('#z=') || input.includes('#c=') || input.includes('#chart=')) {
         location.hash = input.substring(input.indexOf('#')); checkUrlHash(); return;
       }
@@ -2016,8 +2148,8 @@
       if (targetMode === 'play') {
         if (!isSharedReadOnly) {
           try {
-            const parsed = JSON.parse(document.getElementById('chart-output').value);
-            if (Array.isArray(parsed) && parsed.length > 0) notes = parsed;
+            const parsed = parseExternalOrStandardChartJson(document.getElementById('chart-output').value);
+            if (parsed && parsed.notes.length > 0) notes = parsed.notes;
             else if (notes.length > 0) syncNotesToTextarea();
           } catch (e) { if (notes.length === 0) { alert(t('msgInvalidChart')); return; } }
         }
@@ -2225,8 +2357,8 @@
       if (isSharedReadOnly) return;
       if (!currentVideoId) { alert(t('msgLoadFirst')); return; }
       try {
-        const parsed = JSON.parse(document.getElementById('chart-output').value);
-        if (Array.isArray(parsed) && parsed.length > 0) notes = parsed;
+        const parsed = parseExternalOrStandardChartJson(document.getElementById('chart-output').value);
+        if (parsed && parsed.notes.length > 0) notes = parsed.notes;
       } catch (e) {}
       if (notes.length === 0) { alert(t('msgNoNotes')); return; }
       const defaultTitle = (player && player.getVideoData && player.getVideoData().title) || 'My Chart';
@@ -2341,8 +2473,8 @@
       let targetNotes = notes;
       if (!isSharedReadOnly) {
         try {
-          const parsed = JSON.parse(document.getElementById('chart-output').value);
-          if (Array.isArray(parsed) && parsed.length > 0) targetNotes = parsed;
+          const parsed = parseExternalOrStandardChartJson(document.getElementById('chart-output').value);
+          if (parsed && parsed.notes.length > 0) targetNotes = parsed.notes;
         } catch (e) {}
       }
       if (!targetNotes || targetNotes.length === 0) { cachedShareHash = ''; return; }
@@ -2378,8 +2510,8 @@
       if (!currentVideoId) { alert(t('msgLoadFirst')); return; }
       if (!isSharedReadOnly) {
         try {
-          const parsed = JSON.parse(document.getElementById('chart-output').value);
-          if (Array.isArray(parsed) && parsed.length > 0) notes = parsed;
+          const parsed = parseExternalOrStandardChartJson(document.getElementById('chart-output').value);
+          if (parsed && parsed.notes.length > 0) notes = parsed.notes;
         } catch (e) {}
       }
       if (notes.length === 0) { alert(t('msgNoNotes')); return; }
@@ -2401,8 +2533,8 @@
       if (isSharedReadOnly) return;
       if (!currentVideoId) { alert(t('msgLoadFirst')); return; }
       try {
-        const parsed = JSON.parse(document.getElementById('chart-output').value);
-        if (Array.isArray(parsed) && parsed.length > 0) notes = parsed;
+        const parsed = parseExternalOrStandardChartJson(document.getElementById('chart-output').value);
+        if (parsed && parsed.notes.length > 0) notes = parsed.notes;
       } catch (e) {}
       if (notes.length === 0) { alert(t('msgNoNotes')); return; }
       const videoTitle = getShortVideoTitle(38);
@@ -2556,8 +2688,8 @@
       stopAudioCaptureResources(); closeAutoModal();
       if (!isSharedReadOnly) {
         try {
-          const parsed = JSON.parse(document.getElementById('chart-output').value);
-          if (Array.isArray(parsed) && parsed.length > 0) notes = parsed;
+          const parsed = parseExternalOrStandardChartJson(document.getElementById('chart-output').value);
+          if (parsed && parsed.notes.length > 0) notes = parsed.notes;
           else if (notes.length > 0) syncNotesToTextarea();
         } catch (e) { if (notes.length === 0) { alert(t('msgInvalidChart')); return; } }
       }
@@ -2571,7 +2703,6 @@
       updateHudVisibility();
     }
 
-    // 🐢 機能7：スロー（0.5x / 0.75x）や倍速（1.25x / 1.5x）でもフレーム補間がピタッと同期するように再生速度を乗算
     function getSmoothTime() {
       if (!player || typeof player.getCurrentTime !== 'function') return 0;
       if (player.getPlayerState && player.getPlayerState() === 1) {
@@ -2976,7 +3107,6 @@
     }, { passive: false });
 
     window.addEventListener('keydown', (e) => {
-      // ⌨️ 機能11：PCキーコンフィグで「キー入力待ち」状態なら、押されたキーをそのレーンに割り当てる
       if (listeningKeyLane !== -1) {
         e.preventDefault();
         e.stopPropagation();
@@ -3000,7 +3130,6 @@
 
       if (e.isComposing || e.keyCode === 229 || e.key === 'Process') { e.preventDefault(); judgeText = t('msgImeWarning'); return; }
 
-      // ↩️ 機能9：Ctrl+Z / Cmd+Z で直前の編集操作を元に戻す（Undo）
       if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !isSharedReadOnly && (mode === 'edit' || mode === 'record')) {
         e.preventDefault();
         undoEdit();
