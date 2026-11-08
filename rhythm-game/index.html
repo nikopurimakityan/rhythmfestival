@@ -18,6 +18,7 @@
     .play-btn { background: #00e676; color: #000; }
     .rec-btn { background: #29b6f6; color: #000; }
     .edit-btn { background: #ffca28; color: #000; }
+    .swing-btn { background: linear-gradient(135deg, #00e5ff, #1de9b6); color: #000; }
     .auto-btn { background: linear-gradient(135deg, #ff9100, #ffea00); color: #000; }
     .demo-btn { background: linear-gradient(135deg, #00e5ff, #2979ff); color: #fff; }
     .vidrec-btn { background: #e53935; color: #fff; }
@@ -237,7 +238,7 @@
     </div>
   </div>
 
-  <!-- 🛠️ 譜面エディター（微調整）パネル -->
+  <!-- 🛠️ 譜面エディター（微調整）パネル（🌊スイング切替 ＆ 🌊範囲スイング化を追加） -->
   <div id="editor-panel">
     <div class="edit-row">
       <button id="btn-undo" class="edit-btn" tabindex="-1" onclick="undoEdit()" title="直前の操作を元に戻します (Ctrl+Z)">↩️ 戻す</button>
@@ -254,6 +255,7 @@
     </div>
     <div class="edit-row">
       <span id="edit-sel-info" class="edit-badge">ノーツをクリックして選択</span>
+      <button id="btn-toggle-swing" class="swing-btn" tabindex="-1" onclick="toggleSelectedNoteSwing()" title="選択中のノーツをスイング（連続スライド）ノーツに切り替えます (Wキー)">🌊 スイング切替</button>
       <button class="cfg-btn" tabindex="-1" onclick="nudgeSelectedNote(-0.05)">⏱ -0.05s</button>
       <button class="cfg-btn" tabindex="-1" onclick="nudgeSelectedNote(-0.01)">-0.01s</button>
       <button class="cfg-btn" tabindex="-1" onclick="nudgeSelectedNote(0.01)">+0.01s</button>
@@ -265,17 +267,17 @@
       <button id="btn-del-note" tabindex="-1" style="background:#e53935;" onclick="deleteSelectedNote()">🗑️ 削除</button>
     </div>
     <div class="edit-row" style="font-size:11px; color:#ccc; background:#141722; padding:4px 6px; border-radius:6px;">
-      <span id="lbl-range-copy" style="color:#ffca28; font-weight:bold;">📋 範囲コピペ:</span>
-      <input type="number" id="copy-start" value="0.0" step="0.1" min="0" style="width:62px; padding:3px 5px; font-size:11px;">
-      <button id="btn-set-start" class="cfg-btn" tabindex="-1" onclick="setCopyRangePoint('start')" style="padding:3px 6px; font-size:11px;">[始点にセット]</button>
+      <span id="lbl-range-copy" style="color:#ffca28; font-weight:bold;">📋 範囲操作:</span>
+      <input type="number" id="copy-start" value="0.0" step="0.1" min="0" style="width:58px; padding:3px 4px; font-size:11px;">
+      <button id="btn-set-start" class="cfg-btn" tabindex="-1" onclick="setCopyRangePoint('start')" style="padding:3px 5px; font-size:11px;">[始点]</button>
       <span>〜</span>
-      <input type="number" id="copy-end" value="15.0" step="0.1" min="0" style="width:62px; padding:3px 5px; font-size:11px;">
-      <button id="btn-set-end" class="cfg-btn" tabindex="-1" onclick="setCopyRangePoint('end')" style="padding:3px 6px; font-size:11px;">[終点にセット]</button>
-      <button id="btn-copy-range" class="rec-btn" tabindex="-1" onclick="copyNotesInRange()" style="padding:4px 8px; font-size:11px;">📋 範囲コピー</button>
-      <button id="btn-paste-range" class="save-btn" tabindex="-1" onclick="pasteNotesAtCurrentTime()" style="padding:4px 8px; font-size:11px;">📌 現在位置へ貼付</button>
-      <span style="margin-left:6px;">|</span>
-      <button id="btn-snap-chords" class="play-btn" tabindex="-1" onclick="snapAllNearChords()" style="padding:4px 8px; font-size:11px;">🤝 同時押し揃え</button>
-      <span id="lbl-shift-all" style="margin-left:4px;">🌐 全体ずらし:</span>
+      <input type="number" id="copy-end" value="15.0" step="0.1" min="0" style="width:58px; padding:3px 4px; font-size:11px;">
+      <button id="btn-set-end" class="cfg-btn" tabindex="-1" onclick="setCopyRangePoint('end')" style="padding:3px 5px; font-size:11px;">[終点]</button>
+      <button id="btn-copy-range" class="rec-btn" tabindex="-1" onclick="copyNotesInRange()" style="padding:4px 7px; font-size:11px;">📋 コピー</button>
+      <button id="btn-paste-range" class="save-btn" tabindex="-1" onclick="pasteNotesAtCurrentTime()" style="padding:4px 7px; font-size:11px;">📌 貼付</button>
+      <button id="btn-swing-range" class="swing-btn" tabindex="-1" onclick="toggleSwingInRange()" style="padding:4px 7px; font-size:11px;" title="始点〜終点の範囲内にあるノーツを一括でスイング化/解除します">🌊 範囲スイング化</button>
+      <button id="btn-snap-chords" class="play-btn" tabindex="-1" onclick="snapAllNearChords()" style="padding:4px 7px; font-size:11px;">🤝 同時押し揃え</button>
+      <span id="lbl-shift-all" style="margin-left:2px;">🌐 全体:</span>
       <button class="cfg-btn" tabindex="-1" onclick="shiftAllNotes(-0.05)">-0.05s</button>
       <button class="cfg-btn" tabindex="-1" onclick="shiftAllNotes(-0.01)">-0.01s</button>
       <button class="cfg-btn" tabindex="-1" onclick="shiftAllNotes(0.01)">+0.01s</button>
@@ -330,8 +332,8 @@
           <select id="auto-diff" tabindex="-1" style="max-width:none; flex:1;">
             <option id="opt-diff-easy" value="easy">EASY（かんたん・ゆったり単発＆長押し）</option>
             <option id="opt-diff-normal" value="normal" selected>NORMAL（ふつう・8分リズム＆長押し・同時押し）</option>
-            <option id="opt-diff-hard" value="hard">HARD（むずかしい・片手長押し＆階段）</option>
-            <option id="opt-diff-extreme" value="extreme">MASTER（高密度・16分ストリーム＆複合長押し）</option>
+            <option id="opt-diff-hard" value="hard">HARD（むずかしい・片手長押し＆スイング階段）</option>
+            <option id="opt-diff-extreme" value="extreme">MASTER（高密度・16分スイング＆複合長押し）</option>
           </select>
         </div>
         <div class="auto-sec">
@@ -402,72 +404,72 @@
         urlPlaceholder: '曲名で検索 または YouTube/JSON URL', searchBtn: '🔍 検索/読込', pasteBtn: '📋 貼付', autoBtn: '✨ 自動生成', recBtn: '① 手動記録', editBtn: '🛠️ 微調整', playBtn: '② 遊ぶ！', demoBtn: '🤖 AUTO', vidRecStartBtn: '🎥 MP4録画', vidRecStopBtn: '⏹ 録画停止', fsBtn: '⛶ 全画面', cfgBtn: '⚙️ 設定', lblPlayerName: '👤 名前:', creatorPlaceholder: 'ここに入力', lblEditPass: '🔑 パス:', editPassPlaceholder: 'スマホ⇔PC合言葉',
         optRate05: '🐢 0.5x (超スロー)', optRate075: '🐢 0.75x (スロー)', optRate10: '▶ 1.0x (標準速度)', optRate125: '⚡ 1.25x (高速)', optRate15: '🔥 1.5x (超高速)',
         optModOff: '🎯 通常配置', optModMirror: '🪞 ミラー (左右反転)', optModRandom: '🎲 ランダム (シャッフル)',
-        importJsonBtn: '📥 JSON読込', msgImportJsonPrompt: '読み込むJSONのURL または JSONテキストを貼り付けてください:', msgImportJsonSuccess: '📥 JSON譜面（{n}ノーツ）を読み込みました！', msgImportJsonFail: 'JSONデータの読み込みまたは解析に失敗しました。',
+        importJsonBtn: '📥 JSON読込', msgImportJsonPrompt: '読み込むJSONのURL または JSONテキストを貼り付けてください:', msgImportJsonSuccess: '📥 JSON譜面（{n}ノーツ / スイング{sw}個）を読み込みました！', msgImportJsonFail: 'JSONデータの読み込みまたは解析に失敗しました。',
         readonlyBadge: '🔒 共有譜面（🔑パスで編集解除）', twCreateBtn: '🐦 作成共有', copyUrlBtn: '🔗 URLコピー', saveBtn: '💾 保存', savedListDefault: '📂 保存譜面 ({n}曲)',
         lblKeybindTitle: '⌨️ PCキー割り当て設定 (クリックして好きなキーを押す):', resetKeysBtn: '初期キーに戻す', keyPressWait: 'キー入力待ち...',
         lblSfxType: '🔔 タップ音 (効果音):', optSfxBell: '🔔 鈴・シャンシャン (推奨)', optSfxTamb: '🪘 タンバリン (シャリン)', optSfxClap: '👏 クラップ (手拍子)', optSfxWood: '🥁 ウッド (太鼓風)', optSfxSynth: '🎹 クリスタル (電子音)', optSfxOff: '🔇 なし (OFF)', testSfxBtn: '🔊 試聴', lblSfxVol: '🔊 タップ音の音量 (%):', lblOffset: '⏱ 判定タイミング調整 (音ズレ補正):', lblChordSnap: '🤝 同時押し自動吸着幅 (微ズレ補正):', lblFan: '扇状カーブ (100%=半円):', lblOpacity: 'レーンの濃さ (不透明度%):', lblLanes: 'レーン数 (2〜9 / 初期値4):', lblSpeed: 'ノーツ速度 (小=ゆっくり):', lblVx: '奥の中心位置 (左右 X%):', lblVy: '奥の高さ (上下 Y%):', lblBx: '手前の中心位置 (左右 X%):', lblTw: '奥のレーン幅 (広がり%):', lblBw: '手前のレーン幅 (広がり%):', resetCfgBtn: '初期値に戻す',
         restartBtn: '🔄 最初から', finishPlayBtn: '🏁 結果へ', pauseBtn: '⏸ 一時停止', resumeBtn: '▶ 再開', centerRecStart: '🔴 タップして最初から記録開始', centerPlayStart: '🟢 タップして最初から遊ぶ！', centerAutoStart: '🤖 見本オートプレイで再生（動画撮影用）', centerResumeBtn: '▶ 続きから再開する', finishListenBtn: '🧠 ここまで聴いた内容から譜面を設計！ ({s}秒分)', closeBtn: '✖ 閉じる',
-        undoBtn: '↩️ 戻す', appendRecBtn: '🔴 ここから追記', holdDecBtn: '📏 長押し -0.1s', holdIncBtn: '📏 長押し +0.1s', delNoteBtn: '🗑️ 削除',
-        lblRangeCopy: '📋 範囲コピペ:', setStartBtn: '[始点にセット]', setEndBtn: '[終点にセット]', copyRangeBtn: '📋 範囲コピー', pasteRangeBtn: '📌 現在位置へ貼付', snapChordsBtn: '🤝 同時押し揃え', lblShiftAll: '🌐 全体ずらし:',
-        editNoSel: 'ノーツをクリックして選択（停止中にパッド/キーで現在位置に追加）', editSelInfo: '選択中: {t}秒 / レーン{l} / 長押し{d}秒 (ドラッグ・矢印キーで移動)', hudEditMode: '🛠️ 微調整 | {t}s | {n}ノーツ',
+        undoBtn: '↩️ 戻す', toggleSwingBtn: '🌊 スイング切替', appendRecBtn: '🔴 ここから追記', holdDecBtn: '📏 長押し -0.1s', holdIncBtn: '📏 長押し +0.1s', delNoteBtn: '🗑️ 削除',
+        lblRangeCopy: '📋 範囲操作:', setStartBtn: '[始点]', setEndBtn: '[終点]', copyRangeBtn: '📋 コピー', pasteRangeBtn: '📌 貼付', swingRangeBtn: '🌊 範囲スイング化', snapChordsBtn: '🤝 同時押し揃え', lblShiftAll: '🌐 全体:',
+        editNoSel: 'ノーツをクリックして選択（🌊スイング切替やドラッグ移動が可能）', editSelInfo: '選択中: {t}秒 / レーン{l} / 長押し{d}秒 {sw}', swingTagOn: '[🌊スイングON]', swingTagOff: '[通常ノーツ]', hudEditMode: '🛠️ 微調整 | {t}s | {n}ノーツ',
         searchSelectTitle: '🔍 動画を選択してください', searchRecentTitle: '🕒 最近読み込んだ動画履歴（タップで読込）', searchEmptyHistory: 'まだ履歴がありません。上の入力欄に「曲名」または「YouTube URL」を入力してください！', searchResultTitle: '🔍 「{q}」の検索結果（タップで読込）', searchingMsg: 'YouTubeから動画を検索中...', searchNotFound: '動画が見つかりませんでした。別のキーワードをお試しください。', searchBusyMsg: '検索サーバーが混み合っています。', searchOpenYtBtn: '📺 YouTubeで「{q}」を開いてURLをコピーする', searchCopyHint: '※URLをコピーしたら、戻ってきて「📋 貼付」ボタンを押すだけで読み込めます',
-        autoModalTitle: '✨ 曲から自動で譜面を生成', lblAutoDiff: '目標の難易度:', optEasy: 'EASY（かんたん・ゆったり単発＆長押し）', optNormal: 'NORMAL（ふつう・8分リズム＆長押し・同時押し）', optHard: 'HARD（むずかしい・片手長押し＆階段）', optExtreme: 'MASTER（高密度・16分ストリーム＆複合長押し）', autoM1Title: '⚡ 方法1：テンポ(BPM)から待ち時間なしで一括生成（スマホ・PC対応）', lblAutoBpm: 'BPM(テンポ):', tapBpmBtn: '🥁 曲を聴きながらタップ計測', lblAutoStart: '開始秒数:', lblAutoEnd: '終了秒数:', execGenBtn: '⚡ この設定で譜面を即座に生成する！', autoM2Title: '🎧 方法2：曲を1回聴かせてから考えて譜面を設計（PC用・2段階解析）', autoM2Desc: '① まず曲を流して全体の盛り上がり・リズム・音の伸びを記憶させます。<br>② 聴き終わった後、選んだ難易度に合わせて人間が自然に叩ける譜面へ再設計します。', audioRecBtn: '🎧 曲を聴かせて学習スタート（タブ音声を共有）',
+        autoModalTitle: '✨ 曲から自動で譜面を生成', lblAutoDiff: '目標の難易度:', optEasy: 'EASY（かんたん・ゆったり単発＆長押し）', optNormal: 'NORMAL（ふつう・8分リズム＆長押し・同時押し）', optHard: 'HARD（むずかしい・片手長押し＆スイング階段）', optExtreme: 'MASTER（高密度・16分スイング＆複合長押し）', autoM1Title: '⚡ 方法1：テンポ(BPM)から待ち時間なしで一括生成（スマホ・PC対応）', lblAutoBpm: 'BPM(テンポ):', tapBpmBtn: '🥁 曲を聴きながらタップ計測', lblAutoStart: '開始秒数:', lblAutoEnd: '終了秒数:', execGenBtn: '⚡ この設定で譜面を即座に生成する！', autoM2Title: '🎧 方法2：曲を1回聴かせてから考えて譜面を設計（PC用・2段階解析）', autoM2Desc: '① まず曲を流して全体の盛り上がり・リズム・音の伸びを記憶させます。<br>② 聴き終わった後、選んだ難易度に合わせて人間が自然に叩ける譜面へ再設計します。', audioRecBtn: '🎧 曲を聴かせて学習スタート（タブ音声を共有）',
         resModalTitle: '🎉 PLAY RESULT 🎉', lblResScore: 'SCORE:', lblResCombo: '最大コンボ:', resImgBtn: '📸 結果画像を保存', resImgGenerating: '⏳ 画像を生成中...', msgImgSaved: '📸 記念カード画像を保存しました！（PCはそのままXの投稿画面で Ctrl+V で貼り付けも可能です）', resTwBtn: '🐦 プレイ得点をXで共有！', resRivalsBtn: '🔍 他プレイヤーの得点を見る', resRetryBtn: '🔄 もう一度遊ぶ', hudRecMode: '🔴 記録中 | TIME: {t}s | {n}ノーツ', hudListening: '🎧 学習中 | TIME: {t}s | サンプル: {n}', hudTarget: '🎯 目標({name}): {s}点 / {c}コンボ',
-        msgLoadFirst: '先に曲名で検索するかYouTube URLを入れて動画を読み込んでください！', msgNoNotes: 'まだノーツがありません。「✨自動生成」または「①手動記録」「🛠️微調整」で譜面を作ってください！', msgInvalidChart: '譜面データが正しくありません', msgSavePrompt: '保存する譜面のタイトルを入力してください:', msgSaved: '「{t}」を保存しました！', msgSelectDelete: '削除したい譜面を一覧から選んでください', msgConfirmDelete: '「{t}」を削除しますか？', msgUrlCopied: '共有URL（{len}文字）をコピーしました！', msgClipboardEmpty: 'クリップボードが空です', msgClipboardDenied: 'クリップボードの読み取りが許可されませんでした。入力欄に直接貼り付けてください。', msgLoadedGuide: '「✨自動生成」「①手動記録」「🛠️微調整」から譜面を作れます', msgChartReady: '譜面読込完了（{n}ノーツ）！', msgSharedChartReady: '🔒 共有譜面（{n}ノーツ）を読込完了！（自分の譜面は🔑パスで編集可）', msgUnlockedByPass: '🔓 編集パスが一致しました！「🛠️微調整」や「💾保存」が可能です', msgEnterPassPrompt: 'この譜面を編集するための「🔑編集パス（合言葉）」を入力してください:', msgPassWrong: '❌ 編集パスが一致しませんでした', msgNoPassInUrl: 'このURLには編集パスが設定されていません', msgAutoGenDone: '✨ 譜面設計完了（{n}ノーツ / 長押し{h}個）！', msgListenShort: 'まだ十分な長さの音声が聴き取れていません（最低3秒以上再生してください）', msgListeningGuide: '🎧 曲を聴いて構成を学習中...', msgEditGuide: '🛠️ ノーツをドラッグで移動・パッドやキーで現在位置に追加', msgAppendRec: '【🔴 追記記録中！】既存の譜面に重ねて記録します', msgShiftedAll: '全ノーツを {d}秒 ずらしました', msgSnappedChords: '🤝 {n}箇所の微ズレ同時押しをピタッと同一秒数に揃えました！', msgUndone: '↩️ 直前の操作を元に戻しました', msgCopiedRange: '📋 {n}個のノーツをコピーしました！貼り付けたい位置へ移動して「📌現在位置へ貼付」を押してください', msgPastedRange: '📌 現在位置（{t}s）へ {n}個のノーツを貼り付けました！', msgNoCopiedNotes: '指定範囲内にノーツがないか、まだ「📋範囲コピー」されていません', msgImeWarning: '⚠️ キーボードを「半角英数(A)」に切り替えてください！', msgRecStart: '【記録開始！】', msgRecNote: '記録！ ({n}個)', msgHoldRec: '長押し記録！ ({d}秒)', msgMissEarly: 'MISS (早離し)', msgMissLate: 'MISS (離し遅れ)', msgNewBest: '🎉 自己ベスト更新！', msgFirstClear: '✨ 初クリア記録！', msgPrevBest: '(自己ベスト: {s}点)', msgAutoDemoResult: '🤖 見本オートプレイ完了（スコア記録対象外）', msgRivalWin: '👑 目標（{name}: {s}点 / {c}コンボ）を +{d}点 上回りました！ WIN!', msgRivalDraw: '⚡ 目標（{name}: {s}点）と同点タイ記録！ DRAW!', msgRivalLose: '🔥 目標（{name}: {s}点 / {c}コンボ）まであと {d}点！', msgAudioUnsupported: 'お使いのブラウザは画面・音声キャプチャに対応していません。', msgNoAudioTrack: '音声が共有されませんでした。「タブの音声も共有する」にチェックを入れてください！', anonCreator: '名無しの譜面職人', anonPlayer: '名無しのプレイヤー',
+        msgLoadFirst: '先に曲名で検索するかYouTube URLを入れて動画を読み込んでください！', msgNoNotes: 'まだノーツがありません。「✨自動生成」または「①手動記録」「🛠️微調整」で譜面を作ってください！', msgInvalidChart: '譜面データが正しくありません', msgSavePrompt: '保存する譜面のタイトルを入力してください:', msgSaved: '「{t}」を保存しました！', msgSelectDelete: '削除したい譜面を一覧から選んでください', msgConfirmDelete: '「{t}」を削除しますか？', msgUrlCopied: '共有URL（{len}文字）をコピーしました！', msgClipboardEmpty: 'クリップボードが空です', msgClipboardDenied: 'クリップボードの読み取りが許可されませんでした。入力欄に直接貼り付けてください。', msgLoadedGuide: '「✨自動生成」「①手動記録」「🛠️微調整」から譜面を作れます', msgChartReady: '譜面読込完了（{n}ノーツ）！', msgSharedChartReady: '🔒 共有譜面（{n}ノーツ）を読込完了！（自分の譜面は🔑パスで編集可）', msgUnlockedByPass: '🔓 編集パスが一致しました！「🛠️微調整」や「💾保存」が可能です', msgEnterPassPrompt: 'この譜面を編集するための「🔑編集パス（合言葉）」を入力してください:', msgPassWrong: '❌ 編集パスが一致しませんでした', msgNoPassInUrl: 'このURLには編集パスが設定されていません', msgAutoGenDone: '✨ 譜面設計完了（{n}ノーツ / 長押し{h}個 / スイング{sw}個）！', msgListenShort: 'まだ十分な長さの音声が聴き取れていません（最低3秒以上再生してください）', msgListeningGuide: '🎧 曲を聴いて構成を学習中...', msgEditGuide: '🛠️ ノーツを選択して「🌊スイング切替(Wキー)」やドラッグ移動が可能です', msgAppendRec: '【🔴 追記記録中！】既存の譜面に重ねて記録します', msgShiftedAll: '全ノーツを {d}秒 ずらしました', msgSnappedChords: '🤝 {n}箇所の微ズレ同時押しをピタッと同一秒数に揃えました！', msgUndone: '↩️ 直前の操作を元に戻しました', msgSwingToggledOn: '🌊 選択ノーツを「スイングノーツ」に登録しました！', msgSwingToggledOff: '選択ノーツを通常ノーツに戻しました', msgRangeSwingDone: '🌊 指定範囲内の {n}個のノーツをスイング設定しました！', msgCopiedRange: '📋 {n}個のノーツをコピーしました！貼り付けたい位置へ移動して「📌貼付」を押してください', msgPastedRange: '📌 現在位置（{t}s）へ {n}個のノーツを貼り付けました！', msgNoCopiedNotes: '指定範囲内にノーツがないか、まだコピーされていません', msgImeWarning: '⚠️ キーボードを「半角英数(A)」に切り替えてください！', msgRecStart: '【記録開始！】', msgRecNote: '記録！ ({n}個)', msgHoldRec: '長押し記録！ ({d}秒)', msgMissEarly: 'MISS (早離し)', msgMissLate: 'MISS (離し遅れ)', msgNewBest: '🎉 自己ベスト更新！', msgFirstClear: '✨ 初クリア記録！', msgPrevBest: '(自己ベスト: {s}点)', msgAutoDemoResult: '🤖 見本オートプレイ完了（スコア記録対象外）', msgRivalWin: '👑 目標（{name}: {s}点 / {c}コンボ）を +{d}点 上回りました！ WIN!', msgRivalDraw: '⚡ 目標（{name}: {s}点）と同点タイ記録！ DRAW!', msgRivalLose: '🔥 目標（{name}: {s}点 / {c}コンボ）まであと {d}点！', msgAudioUnsupported: 'お使いのブラウザは画面・音声キャプチャに対応していません。', msgNoAudioTrack: '音声が共有されませんでした。「タブの音声も共有する」にチェックを入れてください！', anonCreator: '名無しの譜面職人', anonPlayer: '名無しのプレイヤー',
         twCreateTpl: '『{title}』の譜面({notes}ノーツ/{lanes}レーン)を{creator}が作成しました！\n🎮遊ぶ: {url}\n📺元動画: {yt} {tag} #rhythmfestival', twScoreTpl: '『{title}』({notes}ノーツ/{lanes}レーン)で{player}が【{score}点 / {combo}コンボ{fc}】を達成！\n⚔️この記録に挑戦: {url}\n📺{yt} {tag} #rhythmfestival'
       },
       en: {
         urlPlaceholder: 'Search song or paste YouTube/JSON URL', searchBtn: '🔍 Search/Load', pasteBtn: '📋 Paste', autoBtn: '✨ Auto Gen', recBtn: '① Record', editBtn: '🛠️ Edit', playBtn: '② Play!', demoBtn: '🤖 AUTO', vidRecStartBtn: '🎥 Rec MP4', vidRecStopBtn: '⏹ Stop Rec', fsBtn: '⛶ Fullscreen', cfgBtn: '⚙️ Settings', lblPlayerName: '👤 Name:', creatorPlaceholder: 'Enter name...', lblEditPass: '🔑 Pass:', editPassPlaceholder: 'PC/Mobile Pass',
         optRate05: '🐢 0.5x (Super Slow)', optRate075: '🐢 0.75x (Slow)', optRate10: '▶ 1.0x (Normal)', optRate125: '⚡ 1.25x (Fast)', optRate15: '🔥 1.5x (Super Fast)',
         optModOff: '🎯 Normal Lanes', optModMirror: '🪞 Mirror (Flipped)', optModRandom: '🎲 Random (Shuffle)',
-        importJsonBtn: '📥 Load JSON', msgImportJsonPrompt: 'Paste JSON URL or raw JSON text:', msgImportJsonSuccess: '📥 Loaded JSON chart ({n} notes)!', msgImportJsonFail: 'Failed to load or parse JSON chart data.',
+        importJsonBtn: '📥 Load JSON', msgImportJsonPrompt: 'Paste JSON URL or raw JSON text:', msgImportJsonSuccess: '📥 Loaded JSON chart ({n} notes / {sw} swing)!', msgImportJsonFail: 'Failed to load or parse JSON chart data.',
         readonlyBadge: '🔒 Shared Chart (🔑 Tap to Unlock)', twCreateBtn: '🐦 Share Chart', copyUrlBtn: '🔗 Copy URL', saveBtn: '💾 Save', savedListDefault: '📂 Saved Charts ({n})',
         lblKeybindTitle: '⌨️ PC Key Bindings (Click a lane button & press any key):', resetKeysBtn: 'Reset Keys', keyPressWait: 'Press any key...',
         lblSfxType: '🔔 Tap Sound (SFX):', optSfxBell: '🔔 Jingle Bell', optSfxTamb: '🪘 Tambourine', optSfxClap: '👏 Hand Clap', optSfxWood: '🥁 Wood / Taiko', optSfxSynth: '🎹 Crystal Synth', optSfxOff: '🔇 Mute (OFF)', testSfxBtn: '🔊 Test', lblSfxVol: '🔊 Tap Volume (%):', lblOffset: '⏱ Timing Offset (Audio Delay):', lblChordSnap: '🤝 Chord Auto-Snap Window:', lblFan: 'Fan Curve (100%=Semicircle):', lblOpacity: 'Lane Opacity (%):', lblLanes: 'Lanes (2-9 / Default 4):', lblSpeed: 'Note Speed (Low=Slow):', lblVx: 'Top Center X (%):', lblVy: 'Top Height Y (%):', lblBx: 'Bottom Center X (%):', lblTw: 'Top Lane Width (%):', lblBw: 'Bottom Lane Width (%):', resetCfgBtn: 'Reset Defaults',
         restartBtn: '🔄 Restart', finishPlayBtn: '🏁 Results', pauseBtn: '⏸ Pause', resumeBtn: '▶ Resume', centerRecStart: '🔴 Tap to Record from Start', centerPlayStart: '🟢 Tap to Play from Start!', centerAutoStart: '🤖 Watch Auto-Play Demo', centerResumeBtn: '▶ Resume Current Game', finishListenBtn: '🧠 Finish Listening & Design Chart! ({s}s)', closeBtn: '✖ Close',
-        undoBtn: '↩️ Undo', appendRecBtn: '🔴 Overdub Here', holdDecBtn: '📏 Hold -0.1s', holdIncBtn: '📏 Hold +0.1s', delNoteBtn: '🗑️ Delete',
-        lblRangeCopy: '📋 Range Copy:', setStartBtn: '[Set Start]', setEndBtn: '[Set End]', copyRangeBtn: '📋 Copy Range', pasteRangeBtn: '📌 Paste Here', snapChordsBtn: '🤝 Align Chords', lblShiftAll: '🌐 Shift All:',
-        editNoSel: 'Click a note to select (or tap pad/key while paused to add)', editSelInfo: 'Selected: {t}s / Lane {l} / Hold {d}s', hudEditMode: '🛠️ EDIT | {t}s | {n} Notes',
+        undoBtn: '↩️ Undo', toggleSwingBtn: '🌊 Swing Toggle', appendRecBtn: '🔴 Overdub Here', holdDecBtn: '📏 Hold -0.1s', holdIncBtn: '📏 Hold +0.1s', delNoteBtn: '🗑️ Delete',
+        lblRangeCopy: '📋 Range:', setStartBtn: '[Start]', setEndBtn: '[End]', copyRangeBtn: '📋 Copy', pasteRangeBtn: '📌 Paste', swingRangeBtn: '🌊 Range Swing', snapChordsBtn: '🤝 Align Chords', lblShiftAll: '🌐 Shift:',
+        editNoSel: 'Click a note to select (Use "🌊 Swing Toggle" or drag to move)', editSelInfo: 'Selected: {t}s / Lane {l} / Hold {d}s {sw}', swingTagOn: '[🌊SWING]', swingTagOff: '[Normal]', hudEditMode: '🛠️ EDIT | {t}s | {n} Notes',
         searchSelectTitle: '🔍 Select a Video', searchRecentTitle: '🕒 Recently Loaded Videos', searchEmptyHistory: 'No history yet. Enter a song title or YouTube URL above!', searchResultTitle: '🔍 Search Results for "{q}"', searchingMsg: 'Searching YouTube...', searchNotFound: 'No videos found.', searchBusyMsg: 'Search server is busy.', searchOpenYtBtn: '📺 Open "{q}" on YouTube & Copy URL', searchCopyHint: '*After copying URL, tap "📋 Paste"!',
-        autoModalTitle: '✨ Auto-Generate Chart', lblAutoDiff: 'Target Difficulty:', optEasy: 'EASY (Relaxed Taps & Holds)', optNormal: 'NORMAL (8th Rhythms, Holds & Chords)', optHard: 'HARD (One-hand Holds & Stairs)', optExtreme: 'MASTER (High-density Streams)', autoM1Title: '⚡ Method 1: Instant Generation by BPM', lblAutoBpm: 'BPM (Tempo):', tapBpmBtn: '🥁 Tap Along to Measure BPM', lblAutoStart: 'Start (s):', lblAutoEnd: 'End (s):', execGenBtn: '⚡ Generate Chart Instantly!', autoM2Title: '🎧 Method 2: Listen First & Design Playable Chart (PC)', autoM2Desc: '1. Let it listen to learn beats and sustains.<br>2. Designs a human-friendly chart matching your chosen difficulty.', audioRecBtn: '🎧 Start Listening & Learning (Share Tab Audio)',
+        autoModalTitle: '✨ Auto-Generate Chart', lblAutoDiff: 'Target Difficulty:', optEasy: 'EASY (Relaxed Taps & Holds)', optNormal: 'NORMAL (8th Rhythms, Holds & Chords)', optHard: 'HARD (One-hand Holds & Swing Stairs)', optExtreme: 'MASTER (High-density Swing Streams)', autoM1Title: '⚡ Method 1: Instant Generation by BPM', lblAutoBpm: 'BPM (Tempo):', tapBpmBtn: '🥁 Tap Along to Measure BPM', lblAutoStart: 'Start (s):', lblAutoEnd: 'End (s):', execGenBtn: '⚡ Generate Chart Instantly!', autoM2Title: '🎧 Method 2: Listen First & Design Playable Chart (PC)', autoM2Desc: '1. Let it listen to learn beats and sustains.<br>2. Designs a human-friendly chart matching your chosen difficulty.', audioRecBtn: '🎧 Start Listening & Learning (Share Tab Audio)',
         resModalTitle: '🎉 PLAY RESULT 🎉', lblResScore: 'SCORE:', lblResCombo: 'MAX COMBO:', resImgBtn: '📸 Save Result Card', resImgGenerating: '⏳ Generating Card...', msgImgSaved: '📸 Result Card saved! (Also copied to clipboard — press Ctrl+V on X to paste!)', resTwBtn: '🐦 Share Score on X!', resRivalsBtn: '🔍 View Rivals\' Scores', resRetryBtn: '🔄 Play Again', hudRecMode: '🔴 REC | TIME: {t}s | Notes: {n}', hudListening: '🎧 LEARNING | TIME: {t}s | Samples: {n}', hudTarget: '🎯 Target({name}): {s} pts / {c} Combo',
-        msgLoadFirst: 'Please load a video first!', msgNoNotes: 'No notes yet! Use Auto Gen, Record, or Edit.', msgInvalidChart: 'Invalid chart data.', msgSavePrompt: 'Enter chart title:', msgSaved: 'Saved "{t}"!', msgSelectDelete: 'Select a chart to delete.', msgConfirmDelete: 'Delete "{t}"?', msgUrlCopied: 'Copied Share URL ({len} chars)!', msgClipboardEmpty: 'Clipboard is empty.', msgClipboardDenied: 'Clipboard access denied.', msgLoadedGuide: 'Use "✨ Auto Gen", "① Record", or "🛠️ Edit"!', msgChartReady: 'Chart Loaded ({n} notes)!', msgSharedChartReady: '🔒 Shared Chart ({n} notes) Loaded!', msgUnlockedByPass: '🔓 Edit Passcode matched! Editing unlocked.', msgEnterPassPrompt: 'Enter "🔑 Edit Passcode":', msgPassWrong: '❌ Incorrect Passcode.', msgNoPassInUrl: 'No Edit Passcode was set for this URL.', msgAutoGenDone: '✨ Chart Designed ({n} notes / {h} holds)!', msgListenShort: 'Please play audio for at least 3 seconds.', msgListeningGuide: '🎧 Listening & learning song structure...', msgEditGuide: '🛠️ Drag notes to move, or tap pads to add', msgAppendRec: '[🔴 OVERDUB RECORDING!]', msgShiftedAll: 'Shifted all notes by {d}s', msgSnappedChords: '🤝 Aligned {n} slightly-off chord notes to exact same time!', msgUndone: '↩️ Undid last edit', msgCopiedRange: '📋 Copied {n} notes! Seek to target time and click "📌 Paste Here"', msgPastedRange: '📌 Pasted {n} notes at {t}s!', msgNoCopiedNotes: 'No notes found in range or nothing copied yet', msgImeWarning: '⚠️ Switch keyboard to English(A) mode!', msgRecStart: '[RECORDING START!]', msgRecNote: 'Recorded! ({n})', msgHoldRec: 'Hold Recorded! ({d}s)', msgMissEarly: 'MISS (Early Release)', msgMissLate: 'MISS (Late Release)', msgNewBest: '🎉 NEW HIGH SCORE!', msgFirstClear: '✨ FIRST CLEAR!', msgPrevBest: '(Best: {s} pts)', msgAutoDemoResult: '🤖 Auto-Play Demo Completed', msgRivalWin: '👑 Beat Target ({name}: {s} pts) by +{d} pts! WIN!', msgRivalDraw: '⚡ Tied with Target ({name}: {s} pts)! DRAW!', msgRivalLose: '🔥 {d} pts away from Target ({name}: {s} pts)!', msgAudioUnsupported: 'Screen capture not supported on this browser.', msgNoAudioTrack: 'Please check "Also share tab audio"!', anonCreator: 'Anonymous Charter', anonPlayer: 'Anonymous Player',
+        msgLoadFirst: 'Please load a video first!', msgNoNotes: 'No notes yet! Use Auto Gen, Record, or Edit.', msgInvalidChart: 'Invalid chart data.', msgSavePrompt: 'Enter chart title:', msgSaved: 'Saved "{t}"!', msgSelectDelete: 'Select a chart to delete.', msgConfirmDelete: 'Delete "{t}"?', msgUrlCopied: 'Copied Share URL ({len} chars)!', msgClipboardEmpty: 'Clipboard is empty.', msgClipboardDenied: 'Clipboard access denied.', msgLoadedGuide: 'Use "✨ Auto Gen", "① Record", or "🛠️ Edit"!', msgChartReady: 'Chart Loaded ({n} notes)!', msgSharedChartReady: '🔒 Shared Chart ({n} notes) Loaded!', msgUnlockedByPass: '🔓 Edit Passcode matched! Editing unlocked.', msgEnterPassPrompt: 'Enter "🔑 Edit Passcode":', msgPassWrong: '❌ Incorrect Passcode.', msgNoPassInUrl: 'No Edit Passcode was set for this URL.', msgAutoGenDone: '✨ Chart Designed ({n} notes / {h} holds / {sw} swing)!', msgListenShort: 'Please play audio for at least 3 seconds.', msgListeningGuide: '🎧 Listening & learning song structure...', msgEditGuide: '🛠️ Select a note & press "🌊 Swing Toggle (W)" or drag to move', msgAppendRec: '[🔴 OVERDUB RECORDING!]', msgShiftedAll: 'Shifted all notes by {d}s', msgSnappedChords: '🤝 Aligned {n} slightly-off chord notes to exact same time!', msgUndone: '↩️ Undid last edit', msgSwingToggledOn: '🌊 Registered selected note as a SWING note!', msgSwingToggledOff: 'Reverted selected note to normal tap note', msgRangeSwingDone: '🌊 Updated swing state for {n} notes in range!', msgCopiedRange: '📋 Copied {n} notes! Seek to target time and click "📌 Paste"', msgPastedRange: '📌 Pasted {n} notes at {t}s!', msgNoCopiedNotes: 'No notes found in range or nothing copied yet', msgImeWarning: '⚠️ Switch keyboard to English(A) mode!', msgRecStart: '[RECORDING START!]', msgRecNote: 'Recorded! ({n})', msgHoldRec: 'Hold Recorded! ({d}s)', msgMissEarly: 'MISS (Early Release)', msgMissLate: 'MISS (Late Release)', msgNewBest: '🎉 NEW HIGH SCORE!', msgFirstClear: '✨ FIRST CLEAR!', msgPrevBest: '(Best: {s} pts)', msgAutoDemoResult: '🤖 Auto-Play Demo Completed', msgRivalWin: '👑 Beat Target ({name}: {s} pts) by +{d} pts! WIN!', msgRivalDraw: '⚡ Tied with Target ({name}: {s} pts)! DRAW!', msgRivalLose: '🔥 {d} pts away from Target ({name}: {s} pts)!', msgAudioUnsupported: 'Screen capture not supported on this browser.', msgNoAudioTrack: 'Please check "Also share tab audio"!', anonCreator: 'Anonymous Charter', anonPlayer: 'Anonymous Player',
         twCreateTpl: '{creator} created a chart ({notes} notes/{lanes}K) for "{title}"!\n🎮Play: {url}\n📺Video: {yt} {tag} #rhythmfestival', twScoreTpl: '{player} scored [{score} pts / {combo} Combo{fc}] on "{title}" ({notes} notes/{lanes}K)!\n⚔️Challenge: {url}\n📺{yt} {tag} #rhythmfestival'
       },
       zh: {
         urlPlaceholder: '搜索歌曲名称 或 粘贴 YouTube/JSON 链接', searchBtn: '🔍 搜索/加载', pasteBtn: '📋 粘贴', autoBtn: '✨ 自动生成', recBtn: '① 手动录制', editBtn: '🛠️ 微调编辑', playBtn: '② 开始游玩！', demoBtn: '🤖 自动演示', vidRecStartBtn: '🎥 录屏MP4', vidRecStopBtn: '⏹ 停止录屏', fsBtn: '⛶ 全屏', cfgBtn: '⚙️ 设置', lblPlayerName: '👤 名字:', creatorPlaceholder: '在此输入昵称...', lblEditPass: '🔑 密码:', editPassPlaceholder: '手机⇔电脑暗号',
         optRate05: '🐢 0.5x (超慢速)', optRate075: '🐢 0.75x (慢速)', optRate10: '▶ 1.0x (标准速度)', optRate125: '⚡ 1.25x (快速)', optRate15: '🔥 1.5x (超快速)',
         optModOff: '🎯 默认轨道', optModMirror: '🪞 镜像 (左右反转)', optModRandom: '🎲 随机 (轨道打乱)',
-        importJsonBtn: '📥 导入JSON', msgImportJsonPrompt: '请粘贴 JSON 链接或 JSON 文本内容:', msgImportJsonSuccess: '📥 已成功导入 JSON 谱面（{n}个音符）！', msgImportJsonFail: 'JSON 数据读取或解析失败。',
+        importJsonBtn: '📥 导入JSON', msgImportJsonPrompt: '请粘贴 JSON 链接或 JSON 文本内容:', msgImportJsonSuccess: '📥 已导入 JSON 谱面（{n}个音符 / 滑键{sw}个）！', msgImportJsonFail: 'JSON 数据读取或解析失败。',
         readonlyBadge: '🔒 分享谱面（🔑点击输入密码解锁）', twCreateBtn: '🐦 分享谱面', copyUrlBtn: '🔗 复制短链', saveBtn: '💾 保存', savedListDefault: '📂 已存谱面 ({n}首)',
         lblKeybindTitle: '⌨️ 电脑键盘按键设置 (点击轨道按钮后按下任意键):', resetKeysBtn: '恢复默认按键', keyPressWait: '请按键...',
         lblSfxType: '🔔 打击音效 (Tap):', optSfxBell: '🔔 铃铛・清脆铃音 (推荐)', optSfxTamb: '🪘 铃鼓', optSfxClap: '👏 拍手', optSfxWood: '🥁 木鱼 / 太鼓', optSfxSynth: '🎹 水晶电子音', optSfxOff: '🔇 关闭音效 (OFF)', testSfxBtn: '🔊 试听', lblSfxVol: '🔊 打击音效音量 (%):', lblOffset: '⏱ 判定延迟调节 (蓝牙耳机校准):', lblChordSnap: '🤝 双押自动吸附范围 (微差对齐):', lblFan: '扇形弧度 (100%=半圆):', lblOpacity: '轨道不透明度 (%):', lblLanes: '轨道数量 (2〜9 / 默认4):', lblSpeed: '音符速度 (小=慢):', lblVx: '远端中心位置 (X%):', lblVy: '远端高度 (Y%):', lblBx: '近端中心位置 (X%):', lblTw: '远端轨道宽度 (%):', lblBw: '近端轨道宽度 (%):', resetCfgBtn: '恢复默认设置',
         restartBtn: '🔄 从头开始', finishPlayBtn: '🏁 结算', pauseBtn: '⏸ 暂停', resumeBtn: '▶ 继续', centerRecStart: '🔴 点击从头开始录制', centerPlayStart: '🟢 点击从头开始游玩！', centerAutoStart: '🤖 观看全自动完美演示', centerResumeBtn: '▶ 继续当前进度', finishListenBtn: '🧠 听歌完毕，开始设计谱面！ ({s}秒)', closeBtn: '✖ 关闭',
-        undoBtn: '↩️ 撤销', appendRecBtn: '🔴 从此处追加录制', holdDecBtn: '📏 长按 -0.1s', holdIncBtn: '📏 长按 +0.1s', delNoteBtn: '🗑️ 删除',
-        lblRangeCopy: '📋 区间复制:', setStartBtn: '[设为起点]', setEndBtn: '[设为终点]', copyRangeBtn: '📋 复制区间', pasteRangeBtn: '📌 粘贴到当前位置', snapChordsBtn: '🤝 双押对齐', lblShiftAll: '🌐 全体偏移:',
-        editNoSel: '点击音符选择（暂停时点击按键区添加音符）', editSelInfo: '已选: {t}秒 / 轨道{l} / 长按{d}秒', hudEditMode: '🛠️ 微调模式 | {t}s | {n}音符',
+        undoBtn: '↩️ 撤销', toggleSwingBtn: '🌊 滑键切换', appendRecBtn: '🔴 从此处追加录制', holdDecBtn: '📏 长按 -0.1s', holdIncBtn: '📏 长按 +0.1s', delNoteBtn: '🗑️ 删除',
+        lblRangeCopy: '📋 区间操作:', setStartBtn: '[起点]', setEndBtn: '[终点]', copyRangeBtn: '📋 复制', pasteRangeBtn: '📌 粘贴', swingRangeBtn: '🌊 区间滑键化', snapChordsBtn: '🤝 双押对齐', lblShiftAll: '🌐 偏移:',
+        editNoSel: '点击音符选择（可切换🌊滑键或拖动位置）', editSelInfo: '已选: {t}秒 / 轨道{l} / 长按{d}秒 {sw}', swingTagOn: '[🌊滑键ON]', swingTagOff: '[普通音符]', hudEditMode: '🛠️ 微调模式 | {t}s | {n}音符',
         searchSelectTitle: '🔍 请选择视频', searchRecentTitle: '🕒 最近加载的视频记录', searchEmptyHistory: '暂无记录。请输入歌曲名或 YouTube 链接！', searchResultTitle: '🔍 “{q}”的搜索结果', searchingMsg: '正在搜索视频...', searchNotFound: '未找到视频。', searchBusyMsg: '搜索服务器繁忙。', searchOpenYtBtn: '📺 在 YouTube 打开“{q}”并复制链接', searchCopyHint: '※复制链接后点击“📋 粘贴”即可加载',
-        autoModalTitle: '✨ 根据歌曲自动生成谱面', lblAutoDiff: '目标难度:', optEasy: 'EASY（简单・四分与基础长按）', optNormal: 'NORMAL（普通・八分与长按双押）', optHard: 'HARD（困难・单手长按与楼梯）', optExtreme: 'MASTER（高密度交互与复合长按）', autoM1Title: '⚡ 方式1：根据BPM免等待一键生成', lblAutoBpm: 'BPM(速度):', tapBpmBtn: '🥁 听歌连点测量 BPM', lblAutoStart: '开始秒数:', lblAutoEnd: '结束秒数:', execGenBtn: '⚡ 按此设置立即生成谱面！', autoM2Title: '🎧 方式2：先听一遍歌曲再思考设计谱面（电脑端）', autoM2Desc: '① 先播放歌曲记忆全曲节奏与长音。<br>② 听完后根据难度设计出适合人类双手击打的自然谱面。', audioRecBtn: '🎧 开始听歌学习（勾选分享标签页音频）',
+        autoModalTitle: '✨ 根据歌曲自动生成谱面', lblAutoDiff: '目标难度:', optEasy: 'EASY（简单・四分与基础长按）', optNormal: 'NORMAL（普通・八分与长按双押）', optHard: 'HARD（困难・单手长按与滑动阶梯）', optExtreme: 'MASTER（高密度滑键流与复合长按）', autoM1Title: '⚡ 方式1：根据BPM免等待一键生成', lblAutoBpm: 'BPM(速度):', tapBpmBtn: '🥁 听歌连点测量 BPM', lblAutoStart: '开始秒数:', lblAutoEnd: '结束秒数:', execGenBtn: '⚡ 按此设置立即生成谱面！', autoM2Title: '🎧 方式2：先听一遍歌曲再思考设计谱面（电脑端）', autoM2Desc: '① 先播放歌曲记忆全曲节奏与长音。<br>② 听完后根据难度设计出适合人类双手击打的自然谱面。', audioRecBtn: '🎧 开始听歌学习（勾选分享标签页音频）',
         resModalTitle: '🎉 游玩结算 🎉', lblResScore: '得分:', lblResCombo: '最大连击:', resImgBtn: '📸 保存成绩卡片', resImgGenerating: '⏳ 正在生成卡片...', msgImgSaved: '📸 纪念成绩卡片已保存！（电脑端也可直接在 X 按 Ctrl+V 粘贴图片）', resTwBtn: '🐦 分享成绩到 X！', resRivalsBtn: '🔍 查看其他玩家成绩', resRetryBtn: '🔄 再玩一次', hudRecMode: '🔴 录制中 | {t}s | {n}音符', hudListening: '🎧 学习中 | {t}s | 采样: {n}', hudTarget: '🎯 目标({name}): {s}分 / {c}连击',
-        msgLoadFirst: '请先加载视频！', msgNoNotes: '还没有音符！请先制作谱面。', msgInvalidChart: '谱面数据格式不正确', msgSavePrompt: '请输入谱面标题:', msgSaved: '已保存“{t}”！', msgSelectDelete: '请选择要删除的谱面', msgConfirmDelete: '确定要删除“{t}”吗？', msgUrlCopied: '已复制分享链接（{len}字符）！', msgClipboardEmpty: '剪贴板为空', msgClipboardDenied: '未获得剪贴板权限。', msgLoadedGuide: '请点击“✨自动生成”、“①手动录制”或“🛠️微调编辑”', msgChartReady: '谱面加载完成（{n}个音符）！', msgSharedChartReady: '🔒 分享谱面（{n}个音符）加载完成！', msgUnlockedByPass: '🔓 编辑密码验证成功！已解锁编辑', msgEnterPassPrompt: '请输入“🔑编辑密码”:', msgPassWrong: '❌ 编辑密码不正确', msgNoPassInUrl: '此链接未设置编辑密码', msgAutoGenDone: '✨ 谱面设计完成（{n}个音符 / {h}个长按）！', msgListenShort: '请至少播放3秒以上', msgListeningGuide: '🎧 正在聆听歌曲学习结构...', msgEditGuide: '🛠️ 拖动音符调整，点击按键区添加音符', msgAppendRec: '【🔴 追加录制中！】', msgShiftedAll: '已将全部音符偏移 {d}秒', msgSnappedChords: '🤝 已将 {n} 处微小偏差的双押音符精准对齐！', msgUndone: '↩️ 已撤销上一步操作', msgCopiedRange: '📋 已复制区间内 {n} 个音符！请移动时间轴后点击“📌粘贴到当前位置”', msgPastedRange: '📌 已在 {t}s 处粘贴 {n} 个音符！', msgNoCopiedNotes: '所选区间内没有音符，或尚未执行复制', msgImeWarning: '⚠️ 请将输入法切换为“英文(EN)”模式！', msgRecStart: '【开始录制！】', msgRecNote: '记录！ ({n}个)', msgHoldRec: '长按记录！ ({d}秒)', msgMissEarly: 'MISS (提早松开)', msgMissLate: 'MISS (松开过晚)', msgNewBest: '🎉 刷新个人最高分！', msgFirstClear: '✨ 首次通关记录！', msgPrevBest: '(个人最佳: {s}分)', msgAutoDemoResult: '🤖 自动演示完成', msgRivalWin: '👑 超越目标（{name}: {s}分）+{d}分！ WIN!', msgRivalDraw: '⚡ 与目标（{name}: {s}分）平局！ DRAW!', msgRivalLose: '🔥 距离目标（{name}: {s}分）还差 {d}分！', msgAudioUnsupported: '当前浏览器不支持录屏！', msgNoAudioTrack: '请勾选“同时分享标签页音频”！', anonCreator: '匿名谱师', anonPlayer: '匿名玩家',
+        msgLoadFirst: '请先加载视频！', msgNoNotes: '还没有音符！请先制作谱面。', msgInvalidChart: '谱面数据格式不正确', msgSavePrompt: '请输入谱面标题:', msgSaved: '已保存“{t}”！', msgSelectDelete: '请选择要删除的谱面', msgConfirmDelete: '确定要删除“{t}”吗？', msgUrlCopied: '已复制分享链接（{len}字符）！', msgClipboardEmpty: '剪贴板为空', msgClipboardDenied: '未获得剪贴板权限。', msgLoadedGuide: '请点击“✨自动生成”、“①手动录制”或“🛠️微调编辑”', msgChartReady: '谱面加载完成（{n}个音符）！', msgSharedChartReady: '🔒 分享谱面（{n}个音符）加载完成！', msgUnlockedByPass: '🔓 编辑密码验证成功！已解锁编辑', msgEnterPassPrompt: '请输入“🔑编辑密码”:', msgPassWrong: '❌ 编辑密码不正确', msgNoPassInUrl: '此链接未设置编辑密码', msgAutoGenDone: '✨ 谱面设计完成（{n}音符 / {h}长按 / {sw}滑键）！', msgListenShort: '请至少播放3秒以上', msgListeningGuide: '🎧 正在聆听歌曲学习结构...', msgEditGuide: '🛠️ 选择音符后可按“🌊滑键切换(W键)”或拖动调整', msgAppendRec: '【🔴 追加录制中！】', msgShiftedAll: '已将全部音符偏移 {d}秒', msgSnappedChords: '🤝 已将 {n} 处微小偏差的双押音符精准对齐！', msgUndone: '↩️ 已撤销上一步操作', msgSwingToggledOn: '🌊 已将该音符设为“滑键(Swing)”！', msgSwingToggledOff: '已恢复为普通音符', msgRangeSwingDone: '🌊 已将区间内 {n} 个音符切换为滑键！', msgCopiedRange: '📋 已复制区间内 {n} 个音符！请移动时间轴后点击“📌粘贴”', msgPastedRange: '📌 已在 {t}s 处粘贴 {n} 个音符！', msgNoCopiedNotes: '所选区间内没有音符，或尚未执行复制', msgImeWarning: '⚠️ 请将输入法切换为“英文(EN)”模式！', msgRecStart: '【开始录制！】', msgRecNote: '记录！ ({n}个)', msgHoldRec: '长按记录！ ({d}秒)', msgMissEarly: 'MISS (提早松开)', msgMissLate: 'MISS (松开过晚)', msgNewBest: '🎉 刷新个人最高分！', msgFirstClear: '✨ 首次通关记录！', msgPrevBest: '(个人最佳: {s}分)', msgAutoDemoResult: '🤖 自动演示完成', msgRivalWin: '👑 超越目标（{name}: {s}分）+{d}分！ WIN!', msgRivalDraw: '⚡ 与目标（{name}: {s}分）平局！ DRAW!', msgRivalLose: '🔥 距离目标（{name}: {s}分）还差 {d}分！', msgAudioUnsupported: '当前浏览器不支持录屏！', msgNoAudioTrack: '请勾选“同时分享标签页音频”！', anonCreator: '匿名谱师', anonPlayer: '匿名玩家',
         twCreateTpl: '{creator} 制作了《{title}》的谱面({notes}音符/{lanes}轨)！\n🎮游玩: {url}\n📺原视频: {yt} {tag} #rhythmfestival', twScoreTpl: '{player} 在《{title}》({notes}音符/{lanes}轨)中取得了【{score}分 / {combo}连击{fc}】！\n⚔️挑战此记录: {url}\n📺{yt} {tag} #rhythmfestival'
       },
       ko: {
         urlPlaceholder: '곡명으로 검색 또는 YouTube/JSON URL 붙여넣기', searchBtn: '🔍 검색/불러오기', pasteBtn: '📋 붙여넣기', autoBtn: '✨ 자동생성', recBtn: '① 수동기록', editBtn: '🛠️ 미세조정', playBtn: '② 플레이!', demoBtn: '🤖 오토', vidRecStartBtn: '🎥 MP4녹화', vidRecStopBtn: '⏹ 녹화중지', fsBtn: '⛶ 전체화면', cfgBtn: '⚙️ 설정', lblPlayerName: '👤 이름:', creatorPlaceholder: '이름 입력...', lblEditPass: '🔑 암호:', editPassPlaceholder: '폰⇔PC 연동 암호',
         optRate05: '🐢 0.5x (초저속)', optRate075: '🐢 0.75x (저속)', optRate10: '▶ 1.0x (표준속도)', optRate125: '⚡ 1.25x (고속)', optRate15: '🔥 1.5x (초고속)',
         optModOff: '🎯 기본 배치', optModMirror: '🪞 미러 (좌우반전)', optModRandom: '🎲 랜덤 (셔플)',
-        importJsonBtn: '📥 JSON 로드', msgImportJsonPrompt: '로드할 JSON URL 또는 JSON 텍스트를 붙여넣으세요:', msgImportJsonSuccess: '📥 JSON 채보({n}노트)를 불러왔습니다!', msgImportJsonFail: 'JSON 데이터를 불러오거나 분석하지 못했습니다.',
+        importJsonBtn: '📥 JSON 로드', msgImportJsonPrompt: '로드할 JSON URL 또는 JSON 텍스트를 붙여넣으세요:', msgImportJsonSuccess: '📥 JSON 채보({n}노트 / 스윙 {sw}개)를 불러왔습니다!', msgImportJsonFail: 'JSON 데이터를 불러오거나 분석하지 못했습니다.',
         readonlyBadge: '🔒 공유 채보 (🔑클릭하여 잠금해제)', twCreateBtn: '🐦 채보 공유', copyUrlBtn: '🔗 URL 복사', saveBtn: '💾 저장', savedListDefault: '📂 저장된 채보 ({n}곡)',
         lblKeybindTitle: '⌨️ PC 키보드 키 설정 (레인 버튼을 클릭한 뒤 원하는 키 입력):', resetKeysBtn: '기본 키 복원', keyPressWait: '키 입력 대기...',
         lblSfxType: '🔔 탭 효과음 (SFX):', optSfxBell: '🔔 방울 소리・샹샹 (추천)', optSfxTamb: '🪘 탬버린', optSfxClap: '👏 박수 소리', optSfxWood: '🥁 우드 / 북소리', optSfxSynth: '🎹 크리스탈 전자음', optSfxOff: '🔇 없음 (OFF)', testSfxBtn: '🔊 미리듣기', lblSfxVol: '🔊 탭 효과음 볼륨 (%):', lblOffset: '⏱ 판정 타이밍 조절 (블루투스 싱크):', lblChordSnap: '🤝 동시치기 자동 흡착 범위:', lblFan: '부채꼴 곡률 (100%=반원):', lblOpacity: '레인 불투명도 (%):', lblLanes: '레인 수 (2〜9 / 기본4):', lblSpeed: '노트 속도:', lblVx: '상단 중심 (X%):', lblVy: '상단 높이 (Y%):', lblBx: '하단 중심 (X%):', lblTw: '상단 레인 폭 (%):', lblBw: '하단 레인 폭 (%):', resetCfgBtn: '기본값 복원',
         restartBtn: '🔄 처음부터', finishPlayBtn: '🏁 결과', pauseBtn: '⏸ 정지', resumeBtn: '▶ 재개', centerRecStart: '🔴 탭하여 처음부터 기록 시작', centerPlayStart: '🟢 탭하여 처음부터 플레이!', centerAutoStart: '🤖 오토플레이 데모 재생', centerResumeBtn: '▶ 이어서 계속하기', finishListenBtn: '🧠 청취 완료 및 채보 설계! ({s}초)', closeBtn: '✖ 닫기',
-        undoBtn: '↩️ 실행취소', appendRecBtn: '🔴 여기서부터 추가기록', holdDecBtn: '📏 롱노트 -0.1s', holdIncBtn: '📏 롱노트 +0.1s', delNoteBtn: '🗑️ 삭제',
-        lblRangeCopy: '📋 구간 복사:', setStartBtn: '[시작점 지정]', setEndBtn: '[종료점 지정]', copyRangeBtn: '📋 구간 복사', pasteRangeBtn: '📌 현재 위치에 붙여넣기', snapChordsBtn: '🤝 동시치기 정렬', lblShiftAll: '🌐 전체 이동:',
-        editNoSel: '노트를 클릭해 선택 (정지 중 패드/키로 추가)', editSelInfo: '선택됨: {t}초 / 레인{l} / 롱노트{d}초', hudEditMode: '🛠️ 미세조정 | {t}s | {n}노트',
+        undoBtn: '↩️ 실행취소', toggleSwingBtn: '🌊 스윙 전환', appendRecBtn: '🔴 여기서부터 추가기록', holdDecBtn: '📏 롱노트 -0.1s', holdIncBtn: '📏 롱노트 +0.1s', delNoteBtn: '🗑️ 삭제',
+        lblRangeCopy: '📋 구간 조작:', setStartBtn: '[시작점]', setEndBtn: '[종료점]', copyRangeBtn: '📋 복사', pasteRangeBtn: '📌 붙여넣기', swingRangeBtn: '🌊 구간 스윙화', snapChordsBtn: '🤝 동시치기 정렬', lblShiftAll: '🌐 이동:',
+        editNoSel: '노트를 클릭해 선택 (🌊스윙 전환 또는 드래그 이동 가능)', editSelInfo: '선택됨: {t}초 / 레인{l} / 롱노트{d}초 {sw}', swingTagOn: '[🌊스윙ON]', swingTagOff: '[일반노트]', hudEditMode: '🛠️ 미세조정 | {t}s | {n}노트',
         searchSelectTitle: '🔍 영상을 선택해주세요', searchRecentTitle: '🕒 최근 불러온 영상 기록', searchEmptyHistory: '기록이 없습니다. 곡명이나 YouTube URL을 입력하세요!', searchResultTitle: '🔍 "{q}" 검색 결과', searchingMsg: 'YouTube 검색 중...', searchNotFound: '영상을 찾을 수 없습니다.', searchBusyMsg: '검색 서버가 혼잡합니다.', searchOpenYtBtn: '📺 YouTube에서 "{q}" 열고 URL 복사', searchCopyHint: '※URL 복사 후 "📋 붙여넣기"를 누르세요',
-        autoModalTitle: '✨ 곡에서 자동으로 채보 생성', lblAutoDiff: '목표 난이도:', optEasy: 'EASY (쉬움・4분음표 & 기본 롱노트)', optNormal: 'NORMAL (보통・8분 리듬 & 롱노트)', optHard: 'HARD (어려움・한손 롱노트 & 계단)', optExtreme: 'MASTER (고밀도 스트림 & 폭타)', autoM1Title: '⚡ 방법1: 템포(BPM)로 즉시 생성', lblAutoBpm: 'BPM(템포):', tapBpmBtn: '🥁 곡에 맞춰 탭하여 측정', lblAutoStart: '시작(초):', lblAutoEnd: '종료(초):', execGenBtn: '⚡ 이 설정으로 즉시 채보 생성!', autoM2Title: '🎧 방법2: 곡을 들려준 뒤 생각해서 채보 설계 (PC)', autoM2Desc: '① 먼저 곡을 재생하여 리듬・지속음을 기억시킵니다.<br>② 청취 후 선택한 난이도에 맞춰 자연스러운 채보로 재설계합니다.', audioRecBtn: '🎧 곡 들려주며 학습 시작 (탭 오디오 공유)',
+        autoModalTitle: '✨ 곡에서 자동으로 채보 생성', lblAutoDiff: '목표 난이도:', optEasy: 'EASY (쉬움・4분음표 & 기본 롱노트)', optNormal: 'NORMAL (보통・8분 리듬 & 롱노트)', optHard: 'HARD (어려움・한손 롱노트 & 스윙 계단)', optExtreme: 'MASTER (고밀도 스윙 스트림 & 폭타)', autoM1Title: '⚡ 방법1: 템포(BPM)로 즉시 생성', lblAutoBpm: 'BPM(템포):', tapBpmBtn: '🥁 곡에 맞춰 탭하여 측정', lblAutoStart: '시작(초):', lblAutoEnd: '종료(초):', execGenBtn: '⚡ 이 설정으로 즉시 채보 생성!', autoM2Title: '🎧 방법2: 곡을 들려준 뒤 생각해서 채보 설계 (PC)', autoM2Desc: '① 먼저 곡을 재생하여 리듬・지속음을 기억시킵니다.<br>② 청취 후 선택한 난이도에 맞춰 자연스러운 채보로 재설계합니다.', audioRecBtn: '🎧 곡 들려주며 학습 시작 (탭 오디오 공유)',
         resModalTitle: '🎉 PLAY RESULT 🎉', lblResScore: 'SCORE:', lblResCombo: '최대 콤보:', resImgBtn: '📸 결과 이미지 저장', resImgGenerating: '⏳ 이미지 생성 중...', msgImgSaved: '📸 결과 카드 이미지가 저장되었습니다! (PC에서는 X 게시 화면에 Ctrl+V로 바로 붙여넣기 가능)', resTwBtn: '🐦 플레이 점수를 X에 공유!', resRivalsBtn: '🔍 다른 플레이어 점수 보기', resRetryBtn: '🔄 다시 플레이', hudRecMode: '🔴 기록 중 | {t}s | {n}노트', hudListening: '🎧 학습 중 | {t}s | 샘플: {n}', hudTarget: '🎯 목표({name}): {s}점 / {c}콤보',
-        msgLoadFirst: '먼저 영상을 불러오세요!', msgNoNotes: '노트가 없습니다. 채보를 먼저 만들어주세요!', msgInvalidChart: '채보 데이터가 올바르지 않습니다.', msgSavePrompt: '저장할 채보 제목:', msgSaved: '"{t}" 저장 완료!', msgSelectDelete: '삭제할 채보를 선택해주세요.', msgConfirmDelete: '"{t}" 채보를 삭제하시겠습니까?', msgUrlCopied: '공유 URL({len}자) 복사 완료!', msgClipboardEmpty: '클립보드가 비어 있습니다.', msgClipboardDenied: '클립보드 접근이 거부되었습니다.', msgLoadedGuide: '"✨자동생성", "①수동기록", "🛠️미세조정"으로 채보를 만드세요', msgChartReady: '채보 로드 완료 ({n}노트)!', msgSharedChartReady: '🔒 공유 채보({n}노트) 로드 완료!', msgUnlockedByPass: '🔓 편집 암호 일치! 편집이 활성화되었습니다.', msgEnterPassPrompt: '"🔑편집 암호"를 입력해주세요:', msgPassWrong: '❌ 편집 암호가 일치하지 않습니다.', msgNoPassInUrl: '이 URL에는 편집 암호가 설정되어 있지 않습니다.', msgAutoGenDone: '✨ 채보 설계 완료 ({n}노트 / 롱노트 {h}개)!', msgListenShort: '최소 3초 이상 재생해주세요.', msgListeningGuide: '🎧 곡 구조를 학습 중...', msgEditGuide: '🛠️ 노트를 드래그해 이동하거나 패드/키로 추가하세요', msgAppendRec: '[🔴 추가 기록 중!]', msgShiftedAll: '모든 노트를 {d}초 이동했습니다', msgSnappedChords: '🤝 미세하게 어긋난 동시치기 {n}곳을 정확히 맞췄습니다!', msgUndone: '↩️ 이전 작업을 실행 취소했습니다', msgCopiedRange: '📋 구간 내 {n}개 노트를 복사했습니다! 원하는 위치로 이동 후 "📌현재 위치에 붙여넣기"를 누르세요', msgPastedRange: '📌 현재 위치({t}s)에 {n}개 노트를 붙여넣었습니다!', msgNoCopiedNotes: '구간 내 노트가 없거나 아직 복사되지 않았습니다', msgImeWarning: '⚠️ 키보드를 "영문(A)" 모드로 전환해주세요!', msgRecStart: '[기록 시작!]', msgRecNote: '기록! ({n}개)', msgHoldRec: '롱노트 기록! ({d}초)', msgMissEarly: 'MISS (일찍 뗌)', msgMissLate: 'MISS (늦게 뗌)', msgNewBest: '🎉 최고 기록 경신!', msgFirstClear: '✨ 첫 클리어 기록!', msgPrevBest: '(최고 기록: {s}점)', msgAutoDemoResult: '🤖 오토플레이 데모 완료', msgRivalWin: '👑 목표({name}: {s}점)를 +{d}점 돌파! WIN!', msgRivalDraw: '⚡ 목표({name}: {s}점)와 동점! DRAW!', msgRivalLose: '🔥 목표({name}: {s}점)까지 앞으로 {d}점!', msgAudioUnsupported: '화면 녹화를 지원하지 않는 브라우저입니다.', msgNoAudioTrack: '"탭 오디오도 공유"를 체크해주세요!', anonCreator: '익명 채보 제작자', anonPlayer: '익명 플레이어',
+        msgLoadFirst: '먼저 영상을 불러오세요!', msgNoNotes: '노트가 없습니다. 채보를 먼저 만들어주세요!', msgInvalidChart: '채보 데이터가 올바르지 않습니다.', msgSavePrompt: '저장할 채보 제목:', msgSaved: '"{t}" 저장 완료!', msgSelectDelete: '삭제할 채보를 선택해주세요.', msgConfirmDelete: '"{t}" 채보를 삭제하시겠습니까?', msgUrlCopied: '공유 URL({len}자) 복사 완료!', msgClipboardEmpty: '클립보드가 비어 있습니다.', msgClipboardDenied: '클립보드 접근이 거부되었습니다.', msgLoadedGuide: '"✨자동생성", "①수동기록", "🛠️미세조정"으로 채보를 만드세요', msgChartReady: '채보 로드 완료 ({n}노트)!', msgSharedChartReady: '🔒 공유 채보({n}노트) 로드 완료!', msgUnlockedByPass: '🔓 편집 암호 일치! 편집이 활성화되었습니다.', msgEnterPassPrompt: '"🔑편집 암호"를 입력해주세요:', msgPassWrong: '❌ 편집 암호가 일치하지 않습니다.', msgNoPassInUrl: '이 URL에는 편집 암호가 설정되어 있지 않습니다.', msgAutoGenDone: '✨ 채보 설계 완료 ({n}노트 / 롱노트 {h}개 / 스윙 {sw}개)!', msgListenShort: '최소 3초 이상 재생해주세요.', msgListeningGuide: '🎧 곡 구조를 학습 중...', msgEditGuide: '🛠️ 노트를 선택해 "🌊스윙 전환(W키)" 또는 드래그 이동하세요', msgAppendRec: '[🔴 추가 기록 중!]', msgShiftedAll: '모든 노트를 {d}초 이동했습니다', msgSnappedChords: '🤝 미세하게 어긋난 동시치기 {n}곳을 정확히 맞췄습니다!', msgUndone: '↩️ 이전 작업을 실행 취소했습니다', msgSwingToggledOn: '🌊 선택된 노트를 "스윙 노트"로 등록했습니다!', msgSwingToggledOff: '선택된 노트를 일반 노트로 되돌렸습니다', msgRangeSwingDone: '🌊 구간 내 {n}개 노트를 스윙으로 설정했습니다!', msgCopiedRange: '📋 구간 내 {n}개 노트를 복사했습니다! 원하는 위치로 이동 후 "📌붙여넣기"를 누르세요', msgPastedRange: '📌 현재 위치({t}s)에 {n}개 노트를 붙여넣었습니다!', msgNoCopiedNotes: '구간 내 노트가 없거나 아직 복사되지 않았습니다', msgImeWarning: '⚠️ 키보드를 "영문(A)" 모드로 전환해주세요!', msgRecStart: '[기록 시작!]', msgRecNote: '기록! ({n}개)', msgHoldRec: '롱노트 기록! ({d}초)', msgMissEarly: 'MISS (일찍 뗌)', msgMissLate: 'MISS (늦게 뗌)', msgNewBest: '🎉 최고 기록 경신!', msgFirstClear: '✨ 첫 클리어 기록!', msgPrevBest: '(최고 기록: {s}점)', msgAutoDemoResult: '🤖 오토플레이 데모 완료', msgRivalWin: '👑 목표({name}: {s}점)를 +{d}점 돌파! WIN!', msgRivalDraw: '⚡ 목표({name}: {s}점)와 동점! DRAW!', msgRivalLose: '🔥 목표({name}: {s}점)까지 앞으로 {d}점!', msgAudioUnsupported: '화면 녹화를 지원하지 않는 브라우저입니다.', msgNoAudioTrack: '"탭 오디오도 공유"를 체크해주세요!', anonCreator: '익명 채보 제작자', anonPlayer: '익명 플레이어',
         twCreateTpl: '『{title}』의 채보({notes}노트/{lanes}레인)를 {creator}님이 제작했습니다!\n🎮플레이: {url}\n📺원본영상: {yt} {tag} #rhythmfestival', twScoreTpl: '『{title}』({notes}노트/{lanes}레인)에서 {player}님이 【{score}점 / {combo}콤보{fc}】 달성!\n⚔️이 기록에 도전: {url}\n📺{yt} {tag} #rhythmfestival'
       }
     };function t(key, vars = {}) {
@@ -508,11 +510,12 @@
         'lbl-sfx-vol': 'lblSfxVol', 'lbl-offset': 'lblOffset', 'lbl-chord-snap': 'lblChordSnap',
         'lbl-fan': 'lblFan', 'lbl-opacity': 'lblOpacity', 'lbl-lanes': 'lblLanes', 'lbl-speed': 'lblSpeed',
         'lbl-vx': 'lblVx', 'lbl-vy': 'lblVy', 'lbl-bx': 'lblBx', 'lbl-tw': 'lblTw', 'lbl-bw': 'lblBw',
-        'btn-reset-cfg': 'resetCfgBtn', 'btn-undo': 'undoBtn', 'btn-append-rec': 'appendRecBtn',
-        'btn-hold-dec': 'holdDecBtn', 'btn-hold-inc': 'holdIncBtn', 'btn-del-note': 'delNoteBtn',
-        'lbl-range-copy': 'lblRangeCopy', 'btn-set-start': 'setStartBtn', 'btn-set-end': 'setEndBtn',
-        'btn-copy-range': 'copyRangeBtn', 'btn-paste-range': 'pasteRangeBtn', 'btn-snap-chords': 'snapChordsBtn',
-        'lbl-shift-all': 'lblShiftAll', 'btn-restart': 'restartBtn', 'btn-finish-play': 'finishPlayBtn',
+        'btn-reset-cfg': 'resetCfgBtn', 'btn-undo': 'undoBtn', 'btn-toggle-swing': 'toggleSwingBtn',
+        'btn-append-rec': 'appendRecBtn', 'btn-hold-dec': 'holdDecBtn', 'btn-hold-inc': 'holdIncBtn',
+        'btn-del-note': 'delNoteBtn', 'lbl-range-copy': 'lblRangeCopy', 'btn-set-start': 'setStartBtn',
+        'btn-set-end': 'setEndBtn', 'btn-copy-range': 'copyRangeBtn', 'btn-paste-range': 'pasteRangeBtn',
+        'btn-swing-range': 'swingRangeBtn', 'btn-snap-chords': 'snapChordsBtn', 'lbl-shift-all': 'lblShiftAll',
+        'btn-restart': 'restartBtn', 'btn-finish-play': 'finishPlayBtn',
         'center-rec-start': 'centerRecStart', 'center-play-start': 'centerPlayStart',
         'center-auto-start': 'centerAutoStart', 'center-resume-btn': 'centerResumeBtn',
         'btn-search-close': 'closeBtn', 'btn-auto-close': 'closeBtn', 'auto-modal-title': 'autoModalTitle',
@@ -587,7 +590,7 @@
       vanishX: 50, vanishY: 18, bottomX: 50, judgeY: 80, topWidth: 8, bottomWidth: 80
     };
 
-    // --- 📥 外部JSON譜面データの自動解析・変換・読み込み機能 ---
+    // --- 📥 外部JSON譜面データの自動解析・変換（スイング属性・グループ対応） ---
     function parseExternalOrStandardChartJson(rawText) {
       const data = JSON.parse(rawText);
       const arr = Array.isArray(data)
@@ -595,7 +598,7 @@
         : (data.notes_list || data.notes || (data.response_data && data.response_data.notes_list) || []);
       if (!Array.isArray(arr) || arr.length === 0) return null;
 
-      // timing_sec 形式の外部JSONデータの場合
+      // timing_sec 形式の外部JSONデータの場合（effect 11〜13等のスイングノーツにも完全対応）
       if (arr[0] && arr[0].timing_sec !== undefined) {
         let maxPos = 1;
         for (const item of arr) {
@@ -606,17 +609,24 @@
         const converted = arr.map(item => {
           const tVal = Number(Number(item.timing_sec || 0).toFixed(2));
           const pos = Math.max(1, Math.min(9, Number(item.position) || 1));
-          // 9レーン形式(右端1〜左端9)の場合は左から0〜8に変換、それ以外は0始まりに正規化
           const laneIdx = detectedLanes === 9 ? (9 - pos) : Math.min(detectedLanes - 1, pos - 1);
           const eff = Number(item.effect) || 1;
           const effVal = Number(item.effect_value) || 0;
-          const dur = (eff === 3 && effVal >= 0.20) ? Number(effVal.toFixed(2)) : 0;
-          return { time: tVal, lane: laneIdx, duration: dur };
+          const isHold = (eff === 3 || eff === 13) && effVal >= 0.20;
+          const isSwing = Boolean(item.swing) || (eff >= 11 && eff <= 19);
+          const swGroup = Number(item.notes_level || item.swingGroup || 0);
+          return {
+            time: tVal,
+            lane: laneIdx,
+            duration: isHold ? Number(effVal.toFixed(2)) : 0,
+            swing: isSwing,
+            swingGroup: swGroup
+          };
         }).sort((a, b) => a.time - b.time);
         return { lanes: detectedLanes, notes: converted };
       }
 
-      // 標準の { time, lane, duration } 形式の場合
+      // 標準の { time, lane, duration, swing } 形式の場合
       if (arr[0] && arr[0].time !== undefined && arr[0].lane !== undefined) {
         let maxLane = cfg.lanes;
         const converted = arr.map(item => {
@@ -625,7 +635,9 @@
           return {
             time: Number(Number(item.time || 0).toFixed(2)),
             lane: l,
-            duration: Number(Number(item.duration || 0).toFixed(2))
+            duration: Number(Number(item.duration || 0).toFixed(2)),
+            swing: Boolean(item.swing),
+            swingGroup: Number(item.swingGroup || 0)
           };
         }).sort((a, b) => a.time - b.time);
         return { lanes: Math.min(9, Math.max(2, maxLane)), notes: converted };
@@ -671,13 +683,15 @@
         updateSettings(true);
         notes = parsed.notes.map(n => ({
           time: n.time, lane: n.lane, duration: n.duration,
+          swing: Boolean(n.swing), swingGroup: Number(n.swingGroup || 0),
           hit: false, holding: false, completed: false, nextTickTime: 0
         }));
         resetNotesPlayState();
         syncNotesToTextarea();
         if (currentVideoId) mode = 'play';
         updateHudVisibility();
-        judgeText = t('msgImportJsonSuccess', { n: notes.length });
+        const swCount = notes.filter(n => n.swing).length;
+        judgeText = t('msgImportJsonSuccess', { n: notes.length, sw: swCount });
         return true;
       } catch (e) {
         alert(t('msgImportJsonFail'));
@@ -708,11 +722,13 @@
             updateSettings(true);
             notes = parsed.notes.map(n => ({
               time: n.time, lane: n.lane, duration: n.duration,
+              swing: Boolean(n.swing), swingGroup: Number(n.swingGroup || 0),
               hit: false, holding: false, completed: false, nextTickTime: 0
             }));
             resetNotesPlayState();
             syncNotesToTextarea();
-            judgeText = t('msgImportJsonSuccess', { n: notes.length });
+            const swCount = notes.filter(n => n.swing).length;
+            judgeText = t('msgImportJsonSuccess', { n: notes.length, sw: swCount });
             return;
           }
         } catch (e) {}
@@ -830,7 +846,13 @@
 
     function pushUndoState() {
       if (isSharedReadOnly) return;
-      const snap = JSON.stringify(notes.map(n => ({ time: Number(n.time), lane: Number(n.lane), duration: Number(n.duration || 0) })));
+      const snap = JSON.stringify(notes.map(n => ({
+        time: Number(n.time),
+        lane: Number(n.lane),
+        duration: Number(n.duration || 0),
+        swing: Boolean(n.swing),
+        swingGroup: Number(n.swingGroup || 0)
+      })));
       if (undoStack.length > 0 && undoStack[undoStack.length - 1] === snap) return;
       undoStack.push(snap);
       if (undoStack.length > 40) undoStack.shift();
@@ -843,12 +865,45 @@
         const prev = JSON.parse(undoStack.pop());
         notes = prev.map(n => ({
           time: Number(n.time), lane: Number(n.lane), duration: Number(n.duration || 0),
+          swing: Boolean(n.swing), swingGroup: Number(n.swingGroup || 0),
           hit: false, holding: false, completed: false, nextTickTime: 0
         }));
         selectedNote = null;
         syncNotesToTextarea();
         judgeText = t('msgUndone');
       } catch (e) {}
+    }
+
+    // --- 🌊 微調整モード：選択ノーツまたは指定範囲ノーツのスイング登録・解除関数 ---
+    function toggleSelectedNoteSwing() {
+      releaseUIElementFocus();
+      if (isSharedReadOnly || !selectedNote || !notes.includes(selectedNote)) return;
+      pushUndoState();
+      selectedNote.swing = !selectedNote.swing;
+      playTapSound('tap');
+      syncNotesToTextarea();
+      judgeText = selectedNote.swing ? t('msgSwingToggledOn') : t('msgSwingToggledOff');
+    }
+
+    function toggleSwingInRange() {
+      releaseUIElementFocus();
+      if (isSharedReadOnly) return;
+      const t0 = parseFloat(document.getElementById('copy-start').value) || 0;
+      const t1 = parseFloat(document.getElementById('copy-end').value) || 0;
+      const minT = Math.min(t0, t1) - 0.01;
+      const maxT = Math.max(t0, t1) + 0.01;
+      const targets = notes.filter(n => n.time >= minT && n.time <= maxT);
+      if (targets.length === 0) {
+        alert(t('msgNoCopiedNotes'));
+        return;
+      }
+      pushUndoState();
+      // 範囲内に通常ノーツが1つでもあれば全てスイングONに、すでに全てスイングならOFFにする
+      const shouldTurnOn = targets.some(n => !n.swing);
+      targets.forEach(n => { n.swing = shouldTurnOn; });
+      playTapSound('tap');
+      syncNotesToTextarea();
+      judgeText = t('msgRangeSwingDone', { n: targets.length });
     }
 
     function setCopyRangePoint(which) {
@@ -874,7 +929,9 @@
       copiedNotesBuffer = inRange.map(n => ({
         relTime: Number((n.time - baseTime).toFixed(2)),
         lane: n.lane,
-        duration: Number((n.duration || 0).toFixed(2))
+        duration: Number((n.duration || 0).toFixed(2)),
+        swing: Boolean(n.swing),
+        swingGroup: Number(n.swingGroup || 0)
       }));
       judgeText = t('msgCopiedRange', { n: copiedNotesBuffer.length });
     }
@@ -893,12 +950,51 @@
         const newT = Number((pasteBase + item.relTime).toFixed(2));
         const newL = Math.min(cfg.lanes - 1, item.lane);
         if (!notes.some(existing => existing.lane === newL && Math.abs(existing.time - newT) < 0.02)) {
-          notes.push({ time: newT, lane: newL, duration: item.duration });
+          notes.push({
+            time: newT,
+            lane: newL,
+            duration: item.duration,
+            swing: Boolean(item.swing),
+            swingGroup: Number(item.swingGroup || 0)
+          });
           addedCount++;
         }
       }
       syncNotesToTextarea();
       judgeText = t('msgPastedRange', { t: pasteBase.toFixed(2), n: addedCount });
+    }
+
+    // 連続するスイングノーツのチェイン（矢印方向・接続先ノーツ）を事前計算する関数
+    function computeSwingChainLinks() {
+      for (let i = 0; i < notes.length; i++) {
+        notes[i].nextSwingNote = null;
+        notes[i].prevSwingNote = null;
+        notes[i].swingDir = 0;
+      }
+      for (let i = 0; i < notes.length; i++) {
+        const n = notes[i];
+        if (!n.swing) continue;
+        for (let j = i + 1; j < notes.length; j++) {
+          const m = notes[j];
+          if (!m.swing) continue;
+          const dt = m.time - n.time;
+          if (dt > 0.70) break;
+          if (dt <= 0.015) continue; // 同一タイミングの同時押しスイングは別系統としてスキップ
+          if (n.swingGroup && m.swingGroup && n.swingGroup !== m.swingGroup) continue;
+          if (!m.prevSwingNote) {
+            n.nextSwingNote = m;
+            m.prevSwingNote = n;
+            n.swingDir = Math.sign(m.lane - n.lane);
+            break;
+          }
+        }
+      }
+      for (let i = 0; i < notes.length; i++) {
+        const n = notes[i];
+        if (n.swing && n.swingDir === 0 && n.prevSwingNote) {
+          n.swingDir = Math.sign(n.lane - n.prevSwingNote.lane);
+        }
+      }
     }
 
     function resetNotesPlayState() {
@@ -907,7 +1003,10 @@
       if (snapWin > 0) {
         for (let i = 1; i < notes.length; i++) {
           if (notes[i].lane !== notes[i - 1].lane && (notes[i].time - notes[i - 1].time) > 0 && (notes[i].time - notes[i - 1].time) <= snapWin) {
-            notes[i].time = notes[i - 1].time;
+            // スイング階段（短い間隔で隣へ流れるノーツ）は同時押しに潰さないよう保護
+            if (!(notes[i].swing && notes[i - 1].swing && Math.abs(notes[i].lane - notes[i - 1].lane) === 1 && (notes[i].time - notes[i - 1].time) >= 0.03)) {
+              notes[i].time = notes[i - 1].time;
+            }
           }
         }
       }
@@ -916,8 +1015,10 @@
         notes[i].holding = false;
         notes[i].completed = false;
         notes[i].duration = Number(notes[i].duration || 0);
+        notes[i].swing = Boolean(notes[i].swing);
         notes[i].nextTickTime = 0;
       }
+      computeSwingChainLinks();
       firstActiveNoteIdx = 0;
       allNotesFinishedTime = 0;
       resultShown = false;
@@ -942,6 +1043,7 @@
       let alignedCount = 0;
       for (let i = 1; i < notes.length; i++) {
         if (notes[i].lane !== notes[i - 1].lane) {
+          if (notes[i].swing && notes[i - 1].swing && Math.abs(notes[i].lane - notes[i - 1].lane) === 1) continue;
           const dt = Math.abs(notes[i].time - notes[i - 1].time);
           if (dt > 0.001 && dt <= threshold) {
             notes[i].time = notes[i - 1].time;
@@ -1055,11 +1157,12 @@
         if (fullTitle.slice(27, 54)) c.fillText(fullTitle.slice(27, 54), 60, 415);
 
         const holdCnt = notes.filter(n => n.duration > 0).length;
+        const swingCnt = notes.filter(n => n.swing).length;
         drawRoundRect(c, 60, 434, 420, 44, 10);
         c.fillStyle = '#1e2538'; c.fill();
         c.strokeStyle = '#3bc9db'; c.lineWidth = 1.5; c.stroke();
-        c.fillStyle = '#66d9e8'; c.font = 'bold 19px sans-serif';
-        c.fillText(`🎹 ${cfg.lanes} LANES   |   🎵 ${notes.length} NOTES (Hold: ${holdCnt})`, 78, 463);
+        c.fillStyle = '#66d9e8'; c.font = 'bold 18px sans-serif';
+        c.fillText(`🎹 ${cfg.lanes}K | 🎵 ${notes.length} Notes (Hold:${holdCnt} / Swing:${swingCnt})`, 74, 462);
 
         const playerName = (document.getElementById('creator-name').value.trim() || t('anonPlayer')).slice(0, 18);
         drawRoundRect(c, 60, 494, 420, 68, 12);
@@ -1155,11 +1258,12 @@
       if (type === 'bell') {
         if (sfxNoiseBuffer) {
           const nSrc = ac.createBufferSource(); nSrc.buffer = sfxNoiseBuffer;
-          const hp = ac.createBiquadFilter(); hp.type = 'bandpass'; hp.frequency.setValueAtTime(6800, now); hp.Q.setValueAtTime(1.8, now);
+          const hp = ac.createBiquadFilter(); hp.type = 'bandpass'; hp.frequency.setValueAtTime(kind === 'swing' ? 7600 : 6800, now); hp.Q.setValueAtTime(1.8, now);
           const nGain = ac.createGain(); nGain.gain.setValueAtTime(0.001, now); nGain.gain.linearRampToValueAtTime(vol * 0.85, now + 0.004); nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
           nSrc.connect(hp); hp.connect(nGain); nGain.connect(ac.destination); nSrc.start(now); nSrc.stop(now + 0.115);
         }
-        [2760, 3580, 4820, 6350].forEach((f, idx) => {
+        const freqs = kind === 'swing' ? [3120, 4160, 5280, 6840] : [2760, 3580, 4820, 6350];
+        freqs.forEach((f, idx) => {
           const osc = ac.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(f, now);
           const oGain = ac.createGain(), amp = (vol * 0.28) / (1 + idx * 0.25);
           oGain.gain.setValueAtTime(0.0001, now); oGain.gain.linearRampToValueAtTime(amp, now + 0.003); oGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.125);
@@ -1321,8 +1425,14 @@
     function syncNotesToTextarea() {
       if (isSharedReadOnly) return;
       notes.sort((a, b) => a.time - b.time);
+      computeSwingChainLinks();
       document.getElementById('chart-output').value = JSON.stringify(
-        notes.map(n => ({ time: Number(n.time.toFixed(2)), lane: n.lane, duration: Number((n.duration || 0).toFixed(2)) }))
+        notes.map(n => {
+          const obj = { time: Number(n.time.toFixed(2)), lane: n.lane, duration: Number((n.duration || 0).toFixed(2)) };
+          if (n.swing) obj.swing = true;
+          if (n.swingGroup) obj.swingGroup = n.swingGroup;
+          return obj;
+        })
       );
       scheduleCompressionCache();
       updateSelectedNoteUI();
@@ -1332,7 +1442,13 @@
       const infoEl = document.getElementById('edit-sel-info');
       if (!infoEl) return;
       if (selectedNote && notes.includes(selectedNote)) {
-        infoEl.textContent = t('editSelInfo', { t: selectedNote.time.toFixed(2), l: selectedNote.lane + 1, d: (selectedNote.duration || 0).toFixed(2) });
+        const swTag = selectedNote.swing ? t('swingTagOn') : t('swingTagOff');
+        infoEl.textContent = t('editSelInfo', {
+          t: selectedNote.time.toFixed(2),
+          l: selectedNote.lane + 1,
+          d: (selectedNote.duration || 0).toFixed(2),
+          sw: swTag
+        });
       } else {
         selectedNote = null;
         infoEl.textContent = t('editNoSel');
@@ -1351,6 +1467,7 @@
           notes = parsed.notes;
         }
       } catch (e) {}
+      computeSwingChainLinks();
       mode = 'edit'; isAutoPlay = false;
       if (player && typeof player.pauseVideo === 'function') { manualSeekTime = getSmoothTime(); player.pauseVideo(); }
       if (player && typeof player.getDuration === 'function') {
@@ -1550,22 +1667,36 @@
 
       const numLanes = cfg.lanes, beatSec = 60 / bpm, stepSec = beatSec / 4;
       const totalSteps = Math.floor((endSec - startSec) / stepSec);
-      const rng = createSeededRng(`GEN_V3_${currentVideoId}_${diff}_${numLanes}_${bpm}`);
+      const rng = createSeededRng(`GEN_V4_${currentVideoId}_${diff}_${numLanes}_${bpm}`);
       const generated = [], laneHoldUntilStep = new Array(numLanes).fill(-999), laneLastUsedStep = new Array(numLanes).fill(-999);
       const MIN_JACK_GAP = numLanes <= 2 ? 2 : 3;
-      let nextHand = 0, lastPrimaryLane = -1;
+      let nextHand = 0, lastPrimaryLane = -1, swingGroupCounter = 1;
 
-      function addNoteAtStep(step, lane, holdSteps = 0) {
+      function addNoteAtStep(step, lane, holdSteps = 0, isSwing = false, swGroup = 0) {
         lane = Math.max(0, Math.min(numLanes - 1, Math.round(lane)));
         if (laneHoldUntilStep[lane] > step) return false;
         const tVal = Number((startSec + step * stepSec).toFixed(2));
         const dur = holdSteps > 0 ? Number(Math.max(0.28, holdSteps * stepSec).toFixed(2)) : 0;
         const actualHoldSteps = dur > 0 ? Math.max(holdSteps, Math.ceil(dur / stepSec)) : 0;
-        generated.push({ time: tVal, lane: lane, duration: dur });
+        generated.push({ time: tVal, lane: lane, duration: dur, swing: Boolean(isSwing), swingGroup: swGroup });
         laneLastUsedStep[lane] = step + actualHoldSteps;
         if (actualHoldSteps > 0) laneHoldUntilStep[lane] = step + actualHoldSteps + 1;
         lastPrimaryLane = lane;
         return true;
+      }
+
+      // 🌊 スイング階段フレーズを生成する補助関数
+      function addSwingRun(startStep, length, stepInterval, startLane, dir) {
+        const grp = swingGroupCounter++;
+        let curL = startLane;
+        for (let i = 0; i < length; i++) {
+          const st = startStep + i * stepInterval;
+          if (st >= totalSteps) break;
+          addNoteAtStep(st, curL, 0, true, grp);
+          curL += dir;
+          if (curL < 0) { curL = 1; dir = 1; }
+          else if (curL >= numLanes) { curL = numLanes - 2; dir = -1; }
+        }
       }
 
       function pickNaturalLane(step, handPref = -1, avoidLane = -1) {
@@ -1663,7 +1794,7 @@
             }
             if (barStart + 12 < totalSteps) addNaturalChord(barStart + 12, (rng() < 0.5 ? 4 : 0), 0);
             nextHand = tapHand;
-          } else if (styleRoll < 0.64) {
+          } else if (styleRoll < 0.68) {
             for (const off of [0, 3, 6, 8, 10]) {
               const st = barStart + off;
               if (st >= totalSteps) break;
@@ -1680,14 +1811,9 @@
               nextHand = 1 - nextHand;
             }
           } else {
-            const startL = Math.floor(rng() * numLanes), stepDir = rng() < 0.5 ? 1 : -1;
-            for (let i = 0; i < 4; i++) {
-              const st = barStart + i * 2;
-              if (st >= totalSteps) break;
-              const target = (startL + i * stepDir + numLanes * 4) % numLanes;
-              if (laneHoldUntilStep[target] <= st && (st - laneLastUsedStep[target]) >= 2) addNoteAtStep(st, target, 0);
-              else { const l = pickNaturalLane(st, i % 2); if (l !== -1) addNoteAtStep(st, l, 0); }
-            }
+            const dir = rng() < 0.5 ? 1 : -1;
+            const sLane = dir > 0 ? 0 : numLanes - 1;
+            addSwingRun(barStart, Math.min(4, numLanes), 2, sLane, dir);
             if (barStart + 8 < totalSteps) { const h1 = pickNaturalLane(barStart + 8, 0); if (h1 !== -1) addNoteAtStep(barStart + 8, h1, 6); }
             if (barStart + 12 < totalSteps) { const h2 = pickNaturalLane(barStart + 12, 1); if (h2 !== -1) addNoteAtStep(barStart + 12, h2, 4); }
           }
@@ -1710,16 +1836,16 @@
             if (barStart + 2 < totalSteps) { const l = pickNaturalLane(barStart + 2, 1); if (l !== -1) addNoteAtStep(barStart + 2, l, 0); }
             if (barStart + 6 < totalSteps) addNaturalChord(barStart + 6, 0, 4);
             if (barStart + 8 < totalSteps) { const l = pickNaturalLane(barStart + 8, 0); if (l !== -1) addNoteAtStep(barStart + 8, l, 0); }
-            for (let s = 11; s < 16; s++) {
-              const st = barStart + s; if (st >= totalSteps) break;
-              const l = pickNaturalLane(st, s % 2); if (l !== -1) addNoteAtStep(st, l, 0);
-            }
+            const dir = rng() < 0.5 ? 1 : -1;
+            addSwingRun(barStart + 11, Math.min(5, numLanes), 1, dir > 0 ? 0 : numLanes - 1, dir);
           } else {
-            for (const off of [0, 2, 4, 6, 8, 9, 10]) {
+            for (const off of [0, 2, 4, 6]) {
               const st = barStart + off; if (st >= totalSteps) break;
               const l = pickNaturalLane(st, nextHand); if (l !== -1) addNoteAtStep(st, l, 0);
               nextHand = 1 - nextHand;
             }
+            const dir = rng() < 0.5 ? 1 : -1;
+            addSwingRun(barStart + 8, 4, 1, dir > 0 ? 0 : numLanes - 1, dir);
             if (barStart + 12 < totalSteps) addNaturalChord(barStart + 12, 4, 4);
           }
         } else {
@@ -1738,25 +1864,28 @@
             }
           } else if (styleRoll < 0.72) {
             addNaturalChord(barStart + 0, 3, 0);
-            for (let s = 2; s < 8; s++) { const st = barStart + s; if (st >= totalSteps) break; const l = pickNaturalLane(st, s % 2); if (l !== -1) addNoteAtStep(st, l, 0); }
+            addSwingRun(barStart + 2, Math.min(6, numLanes), 1, 0, 1);
             if (barStart + 8 < totalSteps) addNaturalChord(barStart + 8, 0, 3);
-            for (let s = 10; s < 14; s++) { const st = barStart + s; if (st >= totalSteps) break; const l = pickNaturalLane(st, s % 2); if (l !== -1) addNoteAtStep(st, l, 0); }
+            addSwingRun(barStart + 10, Math.min(4, numLanes), 1, numLanes - 1, -1);
             if (barStart + 14 < totalSteps) addNaturalChord(barStart + 14, 2, 2);
           } else {
-            for (let s = 0; s < 12; s++) {
+            for (let s = 0; s < 8; s++) {
               const st = barStart + s; if (st >= totalSteps) break;
               if (s % 4 === 0 && rng() < 0.45) addNaturalChord(st, 0, 0);
               else { const l = pickNaturalLane(st, nextHand); if (l !== -1) addNoteAtStep(st, l, 0); nextHand = 1 - nextHand; }
             }
+            const dir = rng() < 0.5 ? 1 : -1;
+            addSwingRun(barStart + 8, 4, 1, dir > 0 ? 0 : numLanes - 1, dir);
             if (barStart + 12 < totalSteps) addNaturalChord(barStart + 12, 4, (rng() < 0.5 ? 4 : 0));
           }
         }
       }
 
       const holdCount = generated.filter(n => n.duration > 0).length;
+      const swingCount = generated.filter(n => n.swing).length;
       closeAutoModal();
       applyChartData(currentVideoId, numLanes, generated, false);
-      judgeText = t('msgAutoGenDone', { n: notes.length, h: holdCount });
+      judgeText = t('msgAutoGenDone', { n: notes.length, h: holdCount, sw: swingCount });
     }async function startAudioListeningPhase() {
       if (isSharedReadOnly) return;
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { alert(t('msgAudioUnsupported')); return; }
@@ -1883,7 +2012,8 @@
           if (laneBusyUntil.filter(u => u > tVal + 0.1).length >= 1) dur = 0;
           else if (nextNoteTime - tVal < dur + 0.15 && diff === 'easy') { dur = Math.max(0, Number((nextNoteTime - tVal - 0.15).toFixed(2))); if (dur < 0.28) dur = 0; }
         }
-        designedNotes.push({ time: tVal, lane: chosenLane, duration: dur });
+        const isRapidSwing = (diff === 'hard' || diff === 'extreme') && dur === 0 && (nextNoteTime - tVal) <= 0.18;
+        designedNotes.push({ time: tVal, lane: chosenLane, duration: dur, swing: isRapidSwing });
         laneLastUsed[chosenLane] = tVal + dur;
         laneBusyUntil[chosenLane] = tVal + (dur > 0 ? dur + 0.14 : 0.08);
         lastLane = chosenLane; nextHand = 1 - nextHand;
@@ -1893,14 +2023,15 @@
           for (let l = 0; l < numLanes; l++) if (l !== chosenLane && laneBusyUntil[l] <= tVal + 0.05 && (tVal - laneLastUsed[l]) >= 0.30 && isHandSide(l, nextHand)) subCandidates.push(l);
           if (subCandidates.length > 0) {
             const subLane = subCandidates[Math.floor((1 - normPitch) * subCandidates.length)];
-            designedNotes.push({ time: tVal, lane: subLane, duration: 0 });
+            designedNotes.push({ time: tVal, lane: subLane, duration: 0, swing: false });
             laneLastUsed[subLane] = tVal; laneBusyUntil[subLane] = tVal + 0.08;
           }
         }
       }
       const holdCount = designedNotes.filter(n => n.duration > 0).length;
+      const swingCount = designedNotes.filter(n => n.swing).length;
       applyChartData(currentVideoId, numLanes, designedNotes, false);
-      judgeText = t('msgAutoGenDone', { n: notes.length, h: holdCount });
+      judgeText = t('msgAutoGenDone', { n: notes.length, h: holdCount, sw: swingCount });
     }
 
     function getRecentVideos() { try { return JSON.parse(localStorage.getItem('rg_recent_videos') || '[]'); } catch (e) { return []; } }
@@ -2026,7 +2157,6 @@
         renderVideoCards(getRecentVideos(), t('searchEmptyHistory'));
         return;
       }
-      // 📥 入力欄に .json のURLまたはJSONテキストが貼られた場合は、そのまま外部JSON譜面として読み込む
       if (input.startsWith('[') || input.startsWith('{') || /\.json(\?.*)?$/i.test(input)) {
         await importExternalJsonFromInput(input);
         if (currentVideoId) document.getElementById('yt-url').value = `https://www.youtube.com/watch?v=${currentVideoId}`;
@@ -2365,7 +2495,17 @@
       const title = prompt(t('msgSavePrompt'), defaultTitle);
       if (!title) return;
       const charts = getSavedCharts();
-      charts.push({ title, videoId: currentVideoId, lanes: cfg.lanes, notes: notes.map(n => ({ time: n.time, lane: n.lane, duration: n.duration || 0 })) });
+      charts.push({
+        title,
+        videoId: currentVideoId,
+        lanes: cfg.lanes,
+        notes: notes.map(n => {
+          const obj = { time: n.time, lane: n.lane, duration: n.duration || 0 };
+          if (n.swing) obj.swing = true;
+          if (n.swingGroup) obj.swingGroup = n.swingGroup;
+          return obj;
+        })
+      });
       localStorage.setItem('rg_charts', JSON.stringify(charts));
       refreshSavedList();
       document.getElementById('saved-list').value = charts.length - 1;
@@ -2410,13 +2550,24 @@
       return bytes;
     }
 
+    // 🔗 短縮URLバイナリ圧縮（既存URLと100%互換を維持しつつスイング属性も1バイトで完全保存）
     function buildBinaryBytes(videoId, lanesCount, rawNotes) {
-      const sorted = rawNotes.map(n => ({ time: Number(n.time), lane: Number(n.lane), duration: Number(n.duration || 0) })).sort((a, b) => a.time - b.time);
+      const sorted = rawNotes.map(n => ({
+        time: Number(n.time),
+        lane: Number(n.lane),
+        duration: Number(n.duration || 0),
+        swing: Boolean(n.swing)
+      })).sort((a, b) => a.time - b.time);
+
       const snapWin = cfg.chordSnap ?? 0.05;
       for (let i = 1; i < sorted.length; i++) {
         if (sorted[i].lane !== sorted[i - 1].lane && (sorted[i].time - sorted[i - 1].time) <= Math.max(0.04, snapWin)) {
-          sorted[i].time = sorted[i - 1].time;
-          if (sorted[i].duration > 0 && sorted[i - 1].duration > 0 && Math.abs(sorted[i].duration - sorted[i - 1].duration) <= 0.06) sorted[i].duration = sorted[i - 1].duration;
+          if (!(sorted[i].swing && sorted[i - 1].swing && Math.abs(sorted[i].lane - sorted[i - 1].lane) === 1 && (sorted[i].time - sorted[i - 1].time) >= 0.03)) {
+            sorted[i].time = sorted[i - 1].time;
+            if (sorted[i].duration > 0 && sorted[i - 1].duration > 0 && Math.abs(sorted[i].duration - sorted[i - 1].duration) <= 0.06) {
+              sorted[i].duration = sorted[i - 1].duration;
+            }
+          }
         }
       }
       const bytes = [];
@@ -2426,14 +2577,24 @@
       for (const n of sorted) {
         const tInt = Math.max(prevTimeInt, Math.round(n.time * 100)), dt = tInt - prevTimeInt;
         prevTimeInt = tInt;
-        const durInt = n.duration >= 0.25 ? Math.min(32767, Math.round(n.duration * 100)) : 0;
-        const hasDur = durInt > 0 ? 1 : 0, lane = n.lane & 0x0F;
-        if (dt === 0) bytes.push((6 << 5) | (hasDur << 4) | lane);
-        else if (dt < 1536) { bytes.push((((dt >> 8) & 0x07) << 5) | (hasDur << 4) | lane, dt & 0xFF); }
-        else { const clampedDt = Math.min(65535, dt); bytes.push((7 << 5) | (hasDur << 4) | lane, (clampedDt >> 8) & 0xFF, clampedDt & 0xFF); }
-        if (hasDur) {
-          if (durInt < 128) bytes.push(durInt);
-          else bytes.push(0x80 | ((durInt >> 8) & 0x7F), durInt & 0xFF);
+        const durInt = n.duration >= 0.25 ? Math.min(16383, Math.round(n.duration * 100)) : 0;
+        const isSw = Boolean(n.swing);
+        const hasExtra = (durInt > 0 || isSw) ? 1 : 0;
+        const lane = n.lane & 0x0F;
+        if (dt === 0) bytes.push((6 << 5) | (hasExtra << 4) | lane);
+        else if (dt < 1536) { bytes.push((((dt >> 8) & 0x07) << 5) | (hasExtra << 4) | lane, dt & 0xFF); }
+        else { const clampedDt = Math.min(65535, dt); bytes.push((7 << 5) | (hasExtra << 4) | lane, (clampedDt >> 8) & 0xFF, clampedDt & 0xFF); }
+        if (hasExtra) {
+          if (isSw && durInt === 0) {
+            bytes.push(0); // 0は「長押し0秒＋スイングON」を表す特別コード
+          } else if (isSw && durInt > 0) {
+            const encoded = durInt | 0x4000;
+            bytes.push(0x80 | ((encoded >> 8) & 0x7F), encoded & 0xFF);
+          } else if (durInt < 128) {
+            bytes.push(durInt);
+          } else {
+            bytes.push(0x80 | ((durInt >> 8) & 0x7F), durInt & 0xFF);
+          }
         }
       }
       return new Uint8Array(bytes);
@@ -2446,18 +2607,36 @@
       let pos = 12, curTimeInt = 0;
       const expandedNotes = [];
       while (pos < bytes.length) {
-        const b0 = bytes[pos++], dtMode = (b0 >> 5) & 0x07, hasDur = (b0 >> 4) & 0x01, lane = b0 & 0x0F;
+        const b0 = bytes[pos++], dtMode = (b0 >> 5) & 0x07, hasExtra = (b0 >> 4) & 0x01, lane = b0 & 0x0F;
         let dt = 0;
         if (dtMode === 6) dt = 0;
         else if (dtMode === 7) { dt = (bytes[pos] << 8) | bytes[pos + 1]; pos += 2; }
         else dt = (dtMode << 8) | bytes[pos++];
         curTimeInt += dt;
-        let durInt = 0;
-        if (hasDur) {
+        let durInt = 0, isSwing = false;
+        if (hasExtra) {
           const d0 = bytes[pos++];
-          durInt = (d0 & 0x80) ? (((d0 & 0x7F) << 8) | bytes[pos++]) : d0;
+          if (d0 === 0) {
+            durInt = 0;
+            isSwing = true;
+          } else if (d0 & 0x80) {
+            const rawVal = ((d0 & 0x7F) << 8) | bytes[pos++];
+            if (rawVal & 0x4000) {
+              isSwing = true;
+              durInt = rawVal & 0x3FFF;
+            } else {
+              durInt = rawVal;
+            }
+          } else {
+            durInt = d0;
+          }
         }
-        expandedNotes.push({ time: Number((curTimeInt / 100).toFixed(2)), lane, duration: durInt > 0 ? Number((durInt / 100).toFixed(2)) : 0 });
+        expandedNotes.push({
+          time: Number((curTimeInt / 100).toFixed(2)),
+          lane,
+          duration: durInt > 0 ? Number((durInt / 100).toFixed(2)) : 0,
+          swing: isSwing
+        });
       }
       return { videoId: vid, lanes: lanesCount, notes: expandedNotes };
     }
@@ -2578,6 +2757,7 @@
 
       notes = loadedNotes.map(n => ({
         time: Number(n.time), lane: Number(n.lane), duration: Number(n.duration || 0),
+        swing: Boolean(n.swing), swingGroup: Number(n.swingGroup || 0),
         hit: false, holding: false, completed: false, nextTickTime: 0
       })).sort((a, b) => a.time - b.time);
 
@@ -2585,7 +2765,12 @@
       setSharedReadOnlyMode(shouldLock);
 
       document.getElementById('chart-output').value = JSON.stringify(
-        notes.map(n => ({ time: n.time, lane: n.lane, duration: n.duration }))
+        notes.map(n => {
+          const obj = { time: n.time, lane: n.lane, duration: n.duration };
+          if (n.swing) obj.swing = true;
+          if (n.swingGroup) obj.swingGroup = n.swingGroup;
+          return obj;
+        })
       );
 
       mode = 'play'; isAutoPlay = false; selectedNote = null; manualSeekTime = 0; lastPlayCur = 0;
@@ -2765,6 +2950,78 @@
       if (strokeStyle) { ctx.strokeStyle = strokeStyle; ctx.lineWidth = lineWidth; ctx.stroke(); }
     }
 
+    // 🌊 スイングノーツ同士を繋ぐ光のスライド軌跡（リボン帯）を描画する関数
+    function drawSwingChainRibbons(cur, appearDuration, numLanes, isPlayMode) {
+      const startIdx = isPlayMode ? firstActiveNoteIdx : 0;
+      for (let i = startIdx; i < notes.length; i++) {
+        const n = notes[i];
+        if (n.time - cur > appearDuration) break;
+        if (!n.swing || !n.nextSwingNote) continue;
+        const m = n.nextSwingNote;
+        if (isPlayMode && n.completed && m.completed) continue;
+        if (!isPlayMode && m.time < cur - 0.25) continue;
+
+        const l1 = isPlayMode ? getEffectiveLane(n) : n.lane;
+        const l2 = isPlayMode ? getEffectiveLane(m) : m.lane;
+        if (l1 >= numLanes || l2 >= numLanes) continue;
+
+        const p1 = (isPlayMode && n.completed) ? 1.0 : timeToProgress(n.time, cur, appearDuration);
+        const p2 = timeToProgress(m.time, cur, appearDuration);
+        if (p1 < 0.01 && p2 < 0.01) continue;
+        if (p1 > 1.18 && p2 > 1.18) continue;
+
+        const c1 = Math.max(0.02, Math.min(1.06, p1));
+        const c2 = Math.max(0.02, Math.min(1.06, p2));
+        const aL = getFanPoint(l1 + 0.18, c1), aR = getFanPoint(l1 + 0.82, c1), aC = getFanPoint(l1 + 0.5, c1);
+        const bL = getFanPoint(l2 + 0.18, c2), bR = getFanPoint(l2 + 0.82, c2), bC = getFanPoint(l2 + 0.5, c2);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(aL.x, aL.y);
+        ctx.lineTo(aR.x, aR.y);
+        ctx.lineTo(bR.x, bR.y);
+        ctx.lineTo(bL.x, bL.y);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0, 229, 255, 0.26)';
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(102, 217, 232, 0.70)';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(aC.x, aC.y);
+        ctx.lineTo(bC.x, bC.y);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
+        ctx.lineWidth = Math.max(2, 4 * ((c1 + c2) * 0.5));
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 🌊 スイングノーツ上の方向矢印（≪ / ≫ / ◆）を描画する関数
+    function drawSwingNoteMarker(lane, headProg, swingDir, isPlayMode, n) {
+      if (headProg < 0.08 || headProg > 1.15) return;
+      const pt = getFanPoint(lane + 0.5, headProg);
+      let effDir = swingDir;
+      if (isPlayMode && n.nextSwingNote) {
+        effDir = Math.sign(getEffectiveLane(n.nextSwingNote) - lane);
+      } else if (isPlayMode && n.prevSwingNote) {
+        effDir = Math.sign(lane - getEffectiveLane(n.prevSwingNote));
+      }
+      const arrowSym = effDir < 0 ? '≪' : (effDir > 0 ? '≫' : '◆');
+      const fontSize = Math.max(10, Math.round(20 * headProg));
+      ctx.save();
+      ctx.font = `900 ${fontSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#002b36';
+      ctx.strokeText(arrowSym, pt.x, pt.y);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(arrowSym, pt.x, pt.y);
+      ctx.restore();
+    }
+
     function drawChordSupportLines(cur, appearDuration, numLanes, isPlayMode) {
       const startIdx = isPlayMode ? firstActiveNoteIdx : 0;
       const chordTol = Math.max(0.015, (cfg.chordSnap || 0.05) * 0.5);
@@ -2860,13 +3117,45 @@
 
     function addCombo() { combo++; if (combo > maxCombo) maxCombo = combo; }
 
-    function handleLaneDown(lane) {
+    // 🌊 スイングノーツのヒット処理（スマホの連続スライド通過 ＆ PCの連続キー入力の両方で共通利用）
+    function processNoteHit(n, cur, isSlideInput = false) {
+      const effLane = getEffectiveLane(n);
+      const signedDiff = cur - n.time, diff = Math.abs(signedDiff);
+      keyFlashes[effLane] = 1.0;
+      playTapSound(n.swing ? 'swing' : 'tap');
+      n.hit = true;
+      if (n.duration > 0) {
+        n.holding = true;
+        n.nextTickTime = cur + 0.08;
+        score += (diff <= 0.10 || isSlideInput) ? 500 : 300;
+        judgeText = `HOLD!`;
+      } else {
+        n.completed = true;
+        addCombo();
+        // スイングノーツはスライド通過または0.11秒以内の連続打鍵でPERFECT判定
+        const perfWin = n.swing ? 0.11 : 0.08;
+        if (diff <= perfWin || (n.swing && isSlideInput && diff <= 0.15)) {
+          score += 1000;
+          perfectCount++;
+          judgeText = n.swing ? `SWING PERFECT! (${combo})` : `PERFECT! (${combo})`;
+        } else {
+          const tag = signedDiff < 0 ? 'FAST' : 'LATE';
+          score += 500;
+          goodCount++;
+          judgeText = `GOOD (${tag} ${combo})`;
+        }
+      }
+    }
+
+    // isSlide=true はスマホ/マウスで指を離さずに隣のレーンへスライドしてきた時の呼び出し
+    function handleLaneDown(lane, isSlide = false) {
       keyFlashes[lane] = 1.0;
-      playTapSound('tap');
+      if (!isSlide) playTapSound('tap');
       if (isCountingDown || isAudioListening) return;
       const rawCur = getSmoothTime();
 
       if (mode === 'edit' && !isSharedReadOnly) {
+        if (isSlide) return;
         pushUndoState();
         let tVal = Math.max(0.05, Number(rawCur.toFixed(2)));
         const snapWin = cfg.chordSnap ?? 0.05;
@@ -2879,7 +3168,7 @@
           if (selectedNote === notes[existingIdx]) { notes.splice(existingIdx, 1); selectedNote = null; }
           else selectedNote = notes[existingIdx];
         } else {
-          const newNote = { time: tVal, lane, duration: 0 };
+          const newNote = { time: tVal, lane, duration: 0, swing: false };
           notes.push(newNote); selectedNote = newNote; activeRecordNotes[lane] = newNote;
         }
         syncNotesToTextarea();
@@ -2892,7 +3181,7 @@
       if (mode === 'record' && !isSharedReadOnly) {
         let noteTime = Math.max(0.05, Number(cur.toFixed(2)));
         const snapWin = cfg.chordSnap ?? 0.05;
-        if (snapWin > 0 && notes.length > 0) {
+        if (!isSlide && snapWin > 0 && notes.length > 0) {
           for (let k = notes.length - 1; k >= Math.max(0, notes.length - 4); k--) {
             if (notes[k].lane !== lane && Math.abs(noteTime - notes[k].time) <= snapWin) {
               noteTime = notes[k].time;
@@ -2900,8 +3189,13 @@
             }
           }
         }
-        const newNote = { time: noteTime, lane, duration: 0 };
+        // 記録中にスマホ/マウスでスライド入力した場合は自動的にスイングノーツとして記録！
+        const newNote = { time: noteTime, lane, duration: 0, swing: Boolean(isSlide) };
+        if (isSlide && notes.length > 0 && (noteTime - notes[notes.length - 1].time) <= 0.45) {
+          notes[notes.length - 1].swing = true;
+        }
         notes.push(newNote); selectedNote = newNote; activeRecordNotes[lane] = newNote;
+        if (isSlide) playTapSound('swing');
         syncNotesToTextarea();
         judgeText = t('msgRecNote', { n: notes.length });
       } else if (mode === 'play' && !isAutoPlay) {
@@ -2909,17 +3203,12 @@
           const n = notes[i];
           if (n.time - cur > 0.25) break;
           const effLane = getEffectiveLane(n);
-          if (!n.hit && !n.completed && effLane === lane && Math.abs(n.time - cur) <= 0.20) {
-            const signedDiff = cur - n.time, diff = Math.abs(signedDiff);
-            n.hit = true;
-            if (n.duration > 0) {
-              n.holding = true; n.nextTickTime = cur + 0.08;
-              score += diff <= 0.08 ? 500 : 300; judgeText = `HOLD!`;
-            } else {
-              n.completed = true; addCombo();
-              if (diff <= 0.08) { score += 1000; perfectCount++; judgeText = `PERFECT! (${combo})`; }
-              else { const tag = signedDiff < 0 ? 'FAST' : 'LATE'; score += 500; goodCount++; judgeText = `GOOD (${tag} ${combo})`; }
-            }
+          if (n.hit || n.completed || effLane !== lane) continue;
+          // スライド移動（isSlide=true）のときはスイングノーツのみ反応、通常タップ/PCキー押下（isSlide=false）は全ノーツ反応
+          if (isSlide && !n.swing) continue;
+          const hitWin = n.swing ? 0.22 : 0.20;
+          if (Math.abs(n.time - cur) <= hitWin) {
+            processNoteHit(n, cur, isSlide);
             break;
           }
         }
@@ -2988,14 +3277,14 @@
             return;
           }
           const lp = getLaneAndProgressFromClientXY(t0.clientX, t0.clientY);
-          if (lp.progress >= 0.90) handleLaneDown(lp.lane);
+          if (lp.progress >= 0.90) handleLaneDown(lp.lane, false);
           else {
             pushUndoState();
             dragUndoSaved = true;
             playTapSound('tap');
             let newTime = progressToTime(lp.progress, getSmoothTime(), getAppearDuration());
             newTime = applyMagneticChordSnap(newTime, lp.lane, null);
-            const newNote = { time: newTime, lane: lp.lane, duration: 0 };
+            const newNote = { time: newTime, lane: lp.lane, duration: 0, swing: false };
             notes.push(newNote); selectedNote = newNote; draggingNote = newNote; dragMode = 'move';
             syncNotesToTextarea();
           }
@@ -3014,14 +3303,22 @@
         } else if (e.type === 'touchend' || e.type === 'touchcancel') { draggingNote = null; dragMode = null; dragUndoSaved = false; }
         return;
       }
+
+      // 📱 スマホ・タッチ画面：touchmove中は isSlide=true として隣のレーンのスイングノーツを連続スライド処理
+      const isSlideMove = (e.type === 'touchmove');
       const nextTouch = new Array(9).fill(false);
       for (let i = 0; i < e.touches.length; i++) {
         const lane = getLaneFromClientXY(e.touches[i].clientX, e.touches[i].clientY);
         if (lane !== -1) nextTouch[lane] = true;
       }
       for (let lane = 0; lane < cfg.lanes; lane++) {
-        if (!isTouchDown[lane] && nextTouch[lane]) { isTouchDown[lane] = true; handleLaneDown(lane); }
-        else if (isTouchDown[lane] && !nextTouch[lane]) { isTouchDown[lane] = false; handleLaneUp(lane); }
+        if (!isTouchDown[lane] && nextTouch[lane]) {
+          isTouchDown[lane] = true;
+          handleLaneDown(lane, isSlideMove);
+        } else if (isTouchDown[lane] && !nextTouch[lane]) {
+          isTouchDown[lane] = false;
+          handleLaneUp(lane);
+        }
       }
     }
 
@@ -3042,21 +3339,21 @@
           return;
         }
         const lp = getLaneAndProgressFromClientXY(e.clientX, e.clientY);
-        if (lp.progress >= 0.92) { activeMouseLane = lp.lane; isTouchDown[lp.lane] = true; handleLaneDown(lp.lane); }
+        if (lp.progress >= 0.92) { activeMouseLane = lp.lane; isTouchDown[lp.lane] = true; handleLaneDown(lp.lane, false); }
         else {
           pushUndoState();
           dragUndoSaved = true;
           playTapSound('tap');
           let newTime = progressToTime(lp.progress, getSmoothTime(), getAppearDuration());
           newTime = applyMagneticChordSnap(newTime, lp.lane, null);
-          const newNote = { time: newTime, lane: lp.lane, duration: 0 };
+          const newNote = { time: newTime, lane: lp.lane, duration: 0, swing: false };
           notes.push(newNote); selectedNote = newNote; draggingNote = newNote; dragMode = 'move';
           syncNotesToTextarea();
         }
         return;
       }
       const lane = getLaneFromClientXY(e.clientX, e.clientY);
-      if (lane !== -1) { activeMouseLane = lane; isTouchDown[lane] = true; handleLaneDown(lane); }
+      if (lane !== -1) { activeMouseLane = lane; isTouchDown[lane] = true; handleLaneDown(lane, false); }
     });
 
     window.addEventListener('mousemove', (e) => {
@@ -3072,6 +3369,18 @@
           draggingNote.lane = lp.lane;
         }
         syncNotesToTextarea();
+        return;
+      }
+      // 画面上でマウスボタンを押したままドラッグした場合もスイングノーツを連続スライド処理
+      if (activeMouseLane !== -1 && (mode === 'play' || mode === 'record')) {
+        const newLane = getLaneFromClientXY(e.clientX, e.clientY);
+        if (newLane !== -1 && newLane !== activeMouseLane) {
+          isTouchDown[activeMouseLane] = false;
+          handleLaneUp(activeMouseLane);
+          activeMouseLane = newLane;
+          isTouchDown[newLane] = true;
+          handleLaneDown(newLane, true);
+        }
       }
     });
 
@@ -3137,6 +3446,7 @@
       }
 
       if (mode === 'edit' && !isSharedReadOnly) {
+        if (e.code === 'KeyW' && selectedNote) { e.preventDefault(); toggleSelectedNoteSwing(); return; }
         if (e.code === 'Delete' || e.code === 'Backspace') { e.preventDefault(); deleteSelectedNote(); return; }
         if (e.code === 'ArrowUp') { e.preventDefault(); const d = e.shiftKey ? 0.05 : 0.01; if (selectedNote) nudgeSelectedNote(d); else stepVideoTime(0.05); return; }
         if (e.code === 'ArrowDown') { e.preventDefault(); const d = e.shiftKey ? -0.05 : -0.01; if (selectedNote) nudgeSelectedNote(d); else stepVideoTime(-0.05); return; }
@@ -3144,10 +3454,11 @@
         if (e.code === 'ArrowRight') { e.preventDefault(); if (selectedNote) moveSelectedNoteLane(1); else stepVideoTime(0.2); return; }
       }
 
+      // 💻 パソコン（キーボード）：各キーを連続で押していくことで通常ノーツ＆スイングノーツを処理
       const layout = KEY_LAYOUTS[cfg.lanes], lane = layout.codes.indexOf(e.code);
       if (lane !== -1) {
         e.preventDefault(); e.stopPropagation();
-        if (!e.repeat && !isKeyDown[lane]) { isKeyDown[lane] = true; handleLaneDown(lane); }
+        if (!e.repeat && !isKeyDown[lane]) { isKeyDown[lane] = true; handleLaneDown(lane, false); }
       } else if (e.code === 'Space' || e.code === 'Enter') e.preventDefault();
     }, { capture: true });
 
@@ -3217,13 +3528,14 @@
           if (n.completed || effLane >= numLanes) continue;
           const endTime = n.time + (n.duration || 0);
           if (!n.hit && cur >= n.time) {
-            n.hit = true; keyFlashes[effLane] = 1.0; playTapSound('tap');
+            n.hit = true; keyFlashes[effLane] = 1.0; playTapSound(n.swing ? 'swing' : 'tap');
             if (n.duration > 0) {
               n.holding = true; n.nextTickTime = cur + 0.08; autoPadActiveUntil[effLane] = endTime;
               score += 500; judgeText = `HOLD!`;
             } else {
               n.completed = true; autoPadActiveUntil[effLane] = cur + 0.11;
-              score += 1000; perfectCount++; addCombo(); judgeText = `PERFECT! (${combo})`;
+              score += 1000; perfectCount++; addCombo();
+              judgeText = n.swing ? `SWING PERFECT! (${combo})` : `PERFECT! (${combo})`;
             }
           }
           if (n.holding) {
@@ -3274,6 +3586,7 @@
       const appearDuration = getAppearDuration();
 
       if ((mode === 'record' || mode === 'edit') && !isCountingDown && !isAudioListening) {
+        drawSwingChainRibbons(cur, appearDuration, numLanes, false);
         drawChordSupportLines(cur, appearDuration, numLanes, false);
 
         for (let i = 0; i < notes.length; i++) {
@@ -3294,14 +3607,16 @@
             }
           }
           if (headProg >= 0 && headProg <= 1.15) {
-            const thick = Math.max(0.016, 0.035 * headProg);
-            fillFanSector(n.lane, Math.max(0, headProg - thick), headProg + thick, COLORS_HEX[n.lane], isSelected ? '#ffea00' : '#ffffff', isSelected ? 3.5 : 1);
+            const thick = Math.max(0.016, (n.swing ? 0.040 : 0.035) * headProg);
+            const strokeCol = isSelected ? '#ffea00' : (n.swing ? '#00e5ff' : '#ffffff');
+            fillFanSector(n.lane, Math.max(0, headProg - thick), headProg + thick, COLORS_HEX[n.lane], strokeCol, isSelected ? 3.5 : (n.swing ? 2.5 : 1));
+            if (n.swing) drawSwingNoteMarker(n.lane, headProg, n.swingDir || 0, false, n);
             if (mode === 'edit') {
               const pt = getFanPoint(n.lane + 0.5, headProg);
-              ctx.fillStyle = isSelected ? '#ffea00' : '#ffffff';
+              ctx.fillStyle = isSelected ? '#ffea00' : (n.swing ? '#00e5ff' : '#ffffff');
               ctx.font = isSelected ? 'bold 13px monospace' : '11px monospace';
               ctx.textAlign = 'center';
-              ctx.fillText(`${n.time.toFixed(2)}s`, pt.x, pt.y - 10);
+              ctx.fillText(`${n.swing ? '🌊' : ''}${n.time.toFixed(2)}s`, pt.x, pt.y - 12);
             }
           }
         }
@@ -3326,6 +3641,11 @@
           const endTime = n.time + (n.duration || 0);
 
           if (isPlayingVideo && !waitingForZero && !isCountingDown) {
+            // 📱 スマホ・画面タップ：指を置いたままスライドしているレーンにスイングノーツが到達したら自動でスライドヒット！
+            if (!isAutoPlay && n.swing && !n.hit && isTouchDown[effLane] && Math.abs(n.time - cur) <= 0.11) {
+              processNoteHit(n, cur, true);
+              if (n.completed) continue;
+            }
             if (n.holding) {
               if (cur >= n.nextTickTime && cur <= endTime) { score += 50; n.nextTickTime = cur + 0.08; }
               if (!isAutoPlay && cur - endTime > 0.22) {
@@ -3339,6 +3659,7 @@
           }
         }
 
+        drawSwingChainRibbons(cur, appearDuration, numLanes, true);
         drawChordSupportLines(cur, appearDuration, numLanes, true);
 
         for (let i = firstActiveNoteIdx; i < notes.length; i++) {
@@ -3363,8 +3684,10 @@
             }
           }
           if (!n.holding && headProg >= 0 && headProg <= 1.05) {
-            const thick = Math.max(0.015, 0.034 * headProg);
-            fillFanSector(effLane, Math.max(0, headProg - thick), headProg + thick, COLORS_HEX[effLane], '#ffffff', 1.5);
+            const thick = Math.max(0.015, (n.swing ? 0.040 : 0.034) * headProg);
+            const strokeCol = n.swing ? '#00e5ff' : '#ffffff';
+            fillFanSector(effLane, Math.max(0, headProg - thick), headProg + thick, COLORS_HEX[effLane], strokeCol, n.swing ? 2.5 : 1.5);
+            if (n.swing) drawSwingNoteMarker(effLane, headProg, n.swingDir || 0, true, n);
           }
         }
       }
